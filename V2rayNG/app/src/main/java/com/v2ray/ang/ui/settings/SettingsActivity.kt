@@ -245,7 +245,6 @@ fun SettingsScreen(
             if (aetherGroupExpanded) {
                 SettingsListItem(
                     title = stringResource(R.string.hamed_settings_mode_title),
-                    summary = stringResource(R.string.hamed_settings_mode_summary),
                     entries = modeEntries,
                     values = modeValues,
                     selectedValue = mode,
@@ -260,7 +259,7 @@ fun SettingsScreen(
                 SettingsMenuItem(
                     icon = painterResource(R.drawable.ic_lock_24dp),
                     title = stringResource(R.string.hamed_renew_warp_keys),
-                    subtitle = stringResource(R.string.title_pref_aether_keys_settings),
+                    subtitle = stringResource(R.string.aether_action_renew_key),
                     onClick = { context.startActivity(Intent(context, ServerAetherKeysActivity::class.java)) }
                 )
                 SettingsMenuItem(

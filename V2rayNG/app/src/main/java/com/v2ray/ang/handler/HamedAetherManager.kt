@@ -85,7 +85,7 @@ object HamedAetherManager {
         }
 
         // Search through all existing profiles for any Aether profile
-        val allGuids = MmkvManager.decodeServerList()
+        val allGuids = MmkvManager.decodeServerList("")
         for (guid in allGuids) {
             val profile = MmkvManager.decodeServerConfig(guid)
             if (profile?.configType == EConfigType.AETHER) {
@@ -98,7 +98,7 @@ object HamedAetherManager {
         val profile = ProfileItem.create(EConfigType.AETHER).apply {
             remarks = DEFAULT_PROFILE_REMARKS
             server = "162.159.192.1"
-            serverPort = 2408
+            serverPort = "2408"
             aetherProtocol = AetherProtocol.MASQUE.type
             aetherTransport = AetherTransport.HTTP3.type
             aetherMasqueSni = AppConfig.AETHER_MASQUE_SNI
@@ -125,7 +125,7 @@ object HamedAetherManager {
             profile = ProfileItem.create(EConfigType.AETHER).apply {
                 remarks = DEFAULT_PROFILE_REMARKS
                 server = "162.159.192.1"
-                serverPort = 2408
+                serverPort = "2408"
                 aetherProtocol = AetherProtocol.MASQUE.type
                 aetherTransport = AetherTransport.HTTP3.type
                 aetherMasqueSni = AppConfig.AETHER_MASQUE_SNI
