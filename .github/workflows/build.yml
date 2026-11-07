@@ -252,6 +252,13 @@ jobs:
         name: HamedAether-universal-apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*universal*.apk
 
+    - name: Upload all Release APKs
+      uses: actions/upload-artifact@v4
+      if: ${{ success() }}
+      with:
+        name: HamedAether-Release-APKs
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+
   sign-and-release:
     needs: build
     runs-on: ubuntu-26.04
