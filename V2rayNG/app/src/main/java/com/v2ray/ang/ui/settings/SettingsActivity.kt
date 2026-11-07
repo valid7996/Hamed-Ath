@@ -258,6 +258,7 @@ fun SettingsScreen(
     val masqueVariantValues = stringArrayResource(R.array.hamed_masque_protocol_values).toList()
 
     Scaffold(
+        containerColor = com.v2ray.ang.ui.compose.HamedThemeColors.Background,
         contentWindowInsets = WindowInsets(0),
         topBar = {
             AppTopBar(
