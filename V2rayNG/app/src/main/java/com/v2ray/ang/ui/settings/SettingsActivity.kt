@@ -52,6 +52,7 @@ import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.CollapsiblePreferenceGroupHeader
+import com.v2ray.ang.ui.compose.HamedThemeColors
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsEditItem
 import com.v2ray.ang.ui.compose.SettingsListItem
@@ -258,7 +259,7 @@ fun SettingsScreen(
     val masqueVariantValues = stringArrayResource(R.array.hamed_masque_protocol_values).toList()
 
     Scaffold(
-        containerColor = com.v2ray.ang.ui.compose.HamedThemeColors.Background,
+        containerColor = HamedThemeColors.Background,
         contentWindowInsets = WindowInsets(0),
         topBar = {
             AppTopBar(
