@@ -78,6 +78,7 @@ import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.enums.AetherPsiphon
 import com.v2ray.ang.enums.AetherTor
+import com.v2ray.ang.extension.toast
 import com.v2ray.ang.handler.HamedAetherManager
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.server.ServerAetherKeysActivity
@@ -358,7 +359,7 @@ fun HamedAetherScreen(
                                 if (isRunning) {
                                     onAction(MainAction.TestCurrentServer)
                                 } else {
-                                    com.v2ray.ang.extension.toast(context, R.string.hamed_please_connect_first)
+                                    context.toast(R.string.hamed_please_connect_first)
                                 }
                             }
                         ) {
@@ -533,7 +534,7 @@ fun HamedAetherScreen(
                                     if (isRunning) {
                                         onAction(MainAction.TestCurrentServer)
                                     } else {
-                                        com.v2ray.ang.extension.toast(context, R.string.hamed_please_connect_first)
+                                        context.toast(R.string.hamed_please_connect_first)
                                     }
                                 },
                                 modifier = Modifier.size(32.dp)

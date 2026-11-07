@@ -260,7 +260,7 @@ object HamedAetherManager {
                             scanResult.innerHop?.let { profile.aetherWiwInner = it.toString() }
                         } else {
                             profile.server = scanResult.endpoint.host
-                            profile.serverPort = scanResult.endpoint.port
+                            profile.serverPort = scanResult.endpoint.port.toString()
                         }
                         MmkvManager.encodeServerConfig(guid, profile)
                         LogUtil.i(TAG, "Successfully scanned endpoint: ${scanResult.endpoint}")
