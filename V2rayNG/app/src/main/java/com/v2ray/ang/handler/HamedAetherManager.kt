@@ -1,43 +1,43 @@
 package com.v2ray.ang.handler
 
 import android.content.Context
-import android.net.TrafficStats
-import android.os.SystemClock
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.core.AetherCoreManager
-import com.v2ray.ang.core.CoreServiceManager
+import com.v2ray.ang.core.AetherExit
+import com.v2ray.ang.core.AetherIdentityManager
+import com.v2ray.ang.core.AetherKeys
+import com.v2ray.ang.core.AetherScanner
 import com.v2ray.ang.dto.ConnectionTestResult
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.enums.AetherFingerprint
 import com.v2ray.ang.enums.AetherIpVersion
+import com.v2ray.ang.enums.AetherKeyKind
 import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.enums.AetherPsiphon
 import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.enums.AetherTransport
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.ui.server.AetherKeysRepository
 import com.v2ray.ang.util.LogUtil
-import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * State of real-time network traffic
+ * State of real-time network traffic through the VPN tunnel
  */
 data class HamedTrafficState(
     val downloadSpeedStr: String = "0 B/s",
     val uploadSpeedStr: String = "0 B/s",
     val downloadSpeedBytes: Long = 0L,
     val uploadSpeedBytes: Long = 0L,
-    val totalDownloadStr: String = "0 MB",
-    val totalUploadStr: String = "0 MB",
+    val totalDownloadStr: String = "0 B",
+    val totalUploadStr: String = "0 B",
 )
 
 /**
@@ -58,7 +58,9 @@ object HamedAetherManager {
     const val DEFAULT_PROFILE_REMARKS = "Hamed Aether"
 
     private val scope = CoroutineScope(Dispatchers.IO)
-    private var trafficJob: Job? = null
+
+    private val _preparationStatus = MutableStateFlow<String?>(null)
+    val preparationStatus: StateFlow<String?> = _preparationStatus.asStateFlow()
 
     private val _trafficState = MutableStateFlow(HamedTrafficState())
     val trafficState: StateFlow<HamedTrafficState> = _trafficState.asStateFlow()
@@ -66,11 +68,12 @@ object HamedAetherManager {
     private val _connectionInfo = MutableStateFlow(HamedConnectionInfo())
     val connectionInfo: StateFlow<HamedConnectionInfo> = _connectionInfo.asStateFlow()
 
-    private var sessionStartRx = 0L
-    private var sessionStartTx = 0L
-    private var lastRxBytes = 0L
-    private var lastTxBytes = 0L
-    private var lastTimeMs = 0L
+    private var accumulatedUpBytes = 0L
+    private var accumulatedDownBytes = 0L
+
+    fun setPreparationStatus(status: String?) {
+        _preparationStatus.value = status
+    }
 
     /**
      * Ensures an Aether configuration exists in MMKV and returns its GUID.
@@ -94,10 +97,10 @@ object HamedAetherManager {
             }
         }
 
-        // Create a new Hamed Aether profile
+        // Create a new Hamed Aether profile with optimal defaults
         val profile = ProfileItem.create(EConfigType.AETHER).apply {
             remarks = DEFAULT_PROFILE_REMARKS
-            server = "162.159.192.1"
+            server = ""
             serverPort = "2408"
             aetherProtocol = AetherProtocol.MASQUE.type
             aetherTransport = AetherTransport.HTTP3.type
@@ -107,6 +110,9 @@ object HamedAetherManager {
             aetherPsiphon = AetherPsiphon.OFF.type
             aetherTor = AetherTor.OFF.type
             aetherFingerprint = "chrome"
+            aetherFragment = true
+            aetherFragmentSize = "10-30"
+            aetherFragmentDelay = "10-20"
         }
 
         val guid = MmkvManager.encodeServerConfig("", profile)
@@ -124,7 +130,7 @@ object HamedAetherManager {
         if (profile == null || profile.configType != EConfigType.AETHER) {
             profile = ProfileItem.create(EConfigType.AETHER).apply {
                 remarks = DEFAULT_PROFILE_REMARKS
-                server = "162.159.192.1"
+                server = ""
                 serverPort = "2408"
                 aetherProtocol = AetherProtocol.MASQUE.type
                 aetherTransport = AetherTransport.HTTP3.type
@@ -133,6 +139,10 @@ object HamedAetherManager {
                 aetherIpVersion = AetherIpVersion.V4.type
                 aetherPsiphon = AetherPsiphon.OFF.type
                 aetherTor = AetherTor.OFF.type
+                aetherFingerprint = "chrome"
+                aetherFragment = true
+                aetherFragmentSize = "10-30"
+                aetherFragmentDelay = "10-20"
             }
             MmkvManager.encodeServerConfig(guid, profile)
         }
@@ -145,6 +155,13 @@ object HamedAetherManager {
     fun updateProtocol(protocol: AetherProtocol): ProfileItem {
         val (guid, profile) = getActiveAetherProfile()
         profile.aetherProtocol = protocol.type
+        // Reset endpoints when switching to two-hop or single-hop to ensure fresh scanning
+        if (protocol.twoHops) {
+            profile.aetherWiwOuter = null
+            profile.aetherWiwInner = null
+        } else {
+            profile.server = ""
+        }
         MmkvManager.encodeServerConfig(guid, profile)
         return profile
     }
@@ -171,55 +188,127 @@ object HamedAetherManager {
     }
 
     /**
-     * Starts monitoring traffic speed and total transferred bytes.
+     * Prepares keys and endpoints before starting VPN service.
+     * Checks if WARP keys exist, registers them if missing, and scans for working endpoints.
      */
-    fun startTrafficMonitoring() {
-        trafficJob?.cancel()
-        sessionStartRx = TrafficStats.getTotalRxBytes()
-        sessionStartTx = TrafficStats.getTotalTxBytes()
-        lastRxBytes = sessionStartRx
-        lastTxBytes = sessionStartTx
-        lastTimeMs = SystemClock.elapsedRealtime()
+    fun prepareAndConnect(
+        context: Context,
+        onStatusChange: (String) -> Unit,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        scope.launch {
+            try {
+                val (guid, profile) = getActiveAetherProfile()
+                val protocol = AetherProtocol.fromString(profile.aetherProtocol)
 
-        trafficJob = scope.launch {
-            while (isActive) {
-                delay(1000)
-                val nowTime = SystemClock.elapsedRealtime()
-                val currentRx = TrafficStats.getTotalRxBytes()
-                val currentTx = TrafficStats.getTotalTxBytes()
-
-                val timeDeltaSec = ((nowTime - lastTimeMs).coerceAtLeast(1L)) / 1000.0
-                if (timeDeltaSec > 0) {
-                    val rxSpeed = ((currentRx - lastRxBytes).coerceAtLeast(0L) / timeDeltaSec).toLong()
-                    val txSpeed = ((currentTx - lastTxBytes).coerceAtLeast(0L) / timeDeltaSec).toLong()
-
-                    val totalRx = (currentRx - sessionStartRx).coerceAtLeast(0L)
-                    val totalTx = (currentTx - sessionStartTx).coerceAtLeast(0L)
-
-                    _trafficState.value = HamedTrafficState(
-                        downloadSpeedStr = formatSpeed(rxSpeed),
-                        uploadSpeedStr = formatSpeed(txSpeed),
-                        downloadSpeedBytes = rxSpeed,
-                        uploadSpeedBytes = txSpeed,
-                        totalDownloadStr = formatDataSize(totalRx),
-                        totalUploadStr = formatDataSize(totalTx)
+                // 1. Verify and obtain keys if missing
+                val neededFiles = AetherIdentityManager.filesOf(protocol)
+                val missingFiles = AetherIdentityManager.missing(context, neededFiles)
+                if (missingFiles.isNotEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        onStatusChange("در حال ثبت و دریافت کلیدهای WARP...")
+                    }
+                    val repo = AetherKeysRepository(context)
+                    val settings = repo.loadSettings()
+                    val keyKind = when (protocol) {
+                        AetherProtocol.WIREGUARD -> AetherKeyKind.WIREGUARD
+                        AetherProtocol.MASQUE -> AetherKeyKind.MASQUE
+                        AetherProtocol.GOOL -> AetherKeyKind.GOOL
+                        AetherProtocol.MIM -> AetherKeyKind.MIM
+                        AetherProtocol.WG_OVER_MASQUE -> AetherKeyKind.WG_OVER_MASQUE
+                    }
+                    val updatedSettings = settings.copy(
+                        kind = keyKind,
+                        fragment = true,
+                        fragmentSize = if (settings.fragmentSize.isBlank()) "10-30" else settings.fragmentSize,
+                        fragmentDelay = if (settings.fragmentDelay.isBlank()) "10-20" else settings.fragmentDelay,
+                        fingerprint = AetherFingerprint.CHROME
                     )
+                    repo.saveSettings(updatedSettings)
+                    val renewArgs = AetherKeys.arguments(updatedSettings)
+
+                    LogUtil.i(TAG, "Renewing keys for $keyKind...")
+                    val keys = AetherIdentityManager.renew(context, keyKind, renewArgs, updatedSettings.exit) { line ->
+                        LogUtil.d(TAG, "Key renewal: $line")
+                    }
+
+                    val stillMissing = AetherIdentityManager.missing(context, neededFiles)
+                    if (stillMissing.isNotEmpty() && keys == null) {
+                        LogUtil.w(TAG, "Key registration could not complete, missing: $stillMissing")
+                    }
                 }
 
-                lastRxBytes = currentRx
-                lastTxBytes = currentTx
-                lastTimeMs = nowTime
+                // 2. Check if clean endpoint scan is needed
+                val needsScan = if (protocol.twoHops) {
+                    profile.aetherWiwOuter.isNullOrBlank()
+                } else {
+                    profile.server.isNullOrBlank() || profile.server == "162.159.192.1"
+                }
+
+                if (needsScan) {
+                    withContext(Dispatchers.Main) {
+                        onStatusChange("در حال اسکن و یافتن آی‌پی تمیز...")
+                    }
+                    LogUtil.i(TAG, "Scanning clean endpoint for ${profile.aetherProtocol}...")
+                    val scanResult = AetherScanner.scan(context, profile) { line ->
+                        LogUtil.d(TAG, "AetherScan: $line")
+                    }
+                    if (scanResult != null) {
+                        if (protocol.twoHops) {
+                            profile.aetherWiwOuter = scanResult.endpoint.toString()
+                            scanResult.innerHop?.let { profile.aetherWiwInner = it.toString() }
+                        } else {
+                            profile.server = scanResult.endpoint.host
+                            profile.serverPort = scanResult.endpoint.port
+                        }
+                        MmkvManager.encodeServerConfig(guid, profile)
+                        LogUtil.i(TAG, "Successfully scanned endpoint: ${scanResult.endpoint}")
+                    } else {
+                        LogUtil.w(TAG, "Scan returned null, relying on core auto-discovery")
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    onStatusChange("در حال اتصال...")
+                    onSuccess(guid)
+                }
+            } catch (e: Exception) {
+                LogUtil.e(TAG, "prepareAndConnect error", e)
+                withContext(Dispatchers.Main) {
+                    onError(e.message ?: "خطا در برقراری ارتباط")
+                }
             }
         }
     }
 
     /**
-     * Stops traffic monitoring.
+     * Updates real traffic speeds directly from the VPN daemon's outbound statistics.
      */
-    fun stopTrafficMonitoring() {
-        trafficJob?.cancel()
-        trafficJob = null
-        _trafficState.value = HamedTrafficState()
+    fun updateTrafficFromCore(upSpeed: Long, downSpeed: Long, upBytes: Long, downBytes: Long) {
+        accumulatedUpBytes += upBytes
+        accumulatedDownBytes += downBytes
+
+        _trafficState.value = HamedTrafficState(
+            downloadSpeedStr = formatSpeed(downSpeed),
+            uploadSpeedStr = formatSpeed(upSpeed),
+            downloadSpeedBytes = downSpeed,
+            uploadSpeedBytes = upSpeed,
+            totalDownloadStr = formatDataSize(accumulatedDownBytes),
+            totalUploadStr = formatDataSize(accumulatedUpBytes)
+        )
+    }
+
+    /**
+     * Resets speeds to zero when VPN is disconnected or stopped.
+     */
+    fun resetTraffic() {
+        _trafficState.value = _trafficState.value.copy(
+            downloadSpeedStr = "0 B/s",
+            uploadSpeedStr = "0 B/s",
+            downloadSpeedBytes = 0L,
+            uploadSpeedBytes = 0L
+        )
     }
 
     /**
@@ -238,61 +327,29 @@ object HamedAetherManager {
     }
 
     /**
-     * Updates the connection info based on a ConnectionTestResult.
+     * Updates the connection info based on a real ConnectionTestResult from CoreServiceManager.
      */
     fun updateFromTestResult(result: ConnectionTestResult) {
-        val flag = countryCodeToEmojiFlag(result.country)
-        val country = result.country ?: "---"
-        val ip = result.ipAddress ?: "---"
-        _connectionInfo.value = _connectionInfo.value.copy(
+        val isSuccessful = result.delayMillis >= 0
+        val flag = if (isSuccessful) countryCodeToEmojiFlag(result.country) else "🌐"
+        val country = if (isSuccessful) (result.country ?: "---") else "---"
+        val ip = if (isSuccessful) (result.ipAddress ?: "---") else "---"
+
+        _connectionInfo.value = HamedConnectionInfo(
             ip = ip,
             country = country,
             flagEmoji = flag,
             pingMs = result.delayMillis,
             isTesting = false,
-            testError = if (result.delayMillis < 0) result.errorMessage else null
+            testError = if (!isSuccessful) result.errorMessage.ifBlank { "قطع اتصال" } else null
         )
     }
 
-    /**
-     * Triggers an HTTPS ping and IP lookup.
-     */
-    fun runRealHttpsTest(onComplete: ((ConnectionTestResult) -> Unit)? = null) {
-        _connectionInfo.value = _connectionInfo.value.copy(isTesting = true, testError = null)
-        scope.launch {
-            val start = System.currentTimeMillis()
-            var delayMs = -1L
-            var errorMsg: String? = null
-
-            try {
-                // Test real connection to Google or Cloudflare
-                val latency = SpeedtestManager.socketConnectTime("1.1.1.1", 443, 3000)
-                delayMs = if (latency >= 0) latency else (System.currentTimeMillis() - start)
-            } catch (e: Exception) {
-                errorMsg = e.message ?: "Connection error"
-            }
-
-            val remoteInfo = try {
-                SpeedtestManager.getRemoteIPInfo()
-            } catch (_: Exception) {
-                null
-            }
-
-            val result = ConnectionTestResult(
-                delayMillis = delayMs,
-                errorMessage = errorMsg.orEmpty(),
-                country = remoteInfo?.country,
-                ipAddress = remoteInfo?.ipAddress
-            )
-
-            withContext(Dispatchers.Main) {
-                updateFromTestResult(result)
-                onComplete?.invoke(result)
-            }
-        }
+    fun resetConnectionInfo() {
+        _connectionInfo.value = HamedConnectionInfo()
     }
 
-    private fun formatSpeed(bytesPerSec: Long): String {
+    fun formatSpeed(bytesPerSec: Long): String {
         return when {
             bytesPerSec < 1024 -> "$bytesPerSec B/s"
             bytesPerSec < 1024 * 1024 -> "${bytesPerSec / 1024} KB/s"
@@ -300,7 +357,7 @@ object HamedAetherManager {
         }
     }
 
-    private fun formatDataSize(bytes: Long): String {
+    fun formatDataSize(bytes: Long): String {
         return when {
             bytes < 1024 -> "$bytes B"
             bytes < 1024 * 1024 -> String.format(java.util.Locale.US, "%.1f KB", bytes / 1024.0)

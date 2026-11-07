@@ -289,6 +289,17 @@ object NotificationManager {
         val proxyTotal = proxyUplink + proxyDownlink
         val directTotal = directUplink + directDownlink
         val zeroSpeed = proxyTotal + directTotal == 0L
+
+        val proxyUpSpeed = if (sinceLastQueryInSeconds > 0) (proxyUplink / sinceLastQueryInSeconds).toLong() else 0L
+        val proxyDownSpeed = if (sinceLastQueryInSeconds > 0) (proxyDownlink / sinceLastQueryInSeconds).toLong() else 0L
+        getService()?.let { service ->
+            com.v2ray.ang.helper.MessageHelper.sendMsg2UI(
+                service,
+                AppConfig.MSG_STATE_SPEED,
+                "$proxyUpSpeed,$proxyDownSpeed,$proxyUplink,$proxyDownlink"
+            )
+        }
+
         if (!zeroSpeed || !lastZeroSpeed) {
             val text = StringBuilder()
             appendSpeedString(

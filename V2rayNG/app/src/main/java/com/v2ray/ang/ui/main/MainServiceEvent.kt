@@ -9,6 +9,7 @@ sealed class MainServiceEvent {
     data object StateStartSuccess : MainServiceEvent()
     data class StateStartFailure(val message: String? = null) : MainServiceEvent()
     data class StateConnecting(val message: String) : MainServiceEvent()
+    data class SpeedUpdate(val upSpeed: Long, val downSpeed: Long, val upBytes: Long, val downBytes: Long) : MainServiceEvent()
     data object StateStopSuccess : MainServiceEvent()
     data class MeasureDelayResult(val result: ConnectionTestResult, val requestId: String) : MainServiceEvent()
     data class MeasureDelayCancelled(val requestId: String) : MainServiceEvent()

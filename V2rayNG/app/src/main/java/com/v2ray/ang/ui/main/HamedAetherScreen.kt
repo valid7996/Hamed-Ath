@@ -97,6 +97,7 @@ fun HamedAetherScreen(
 
     val trafficState by HamedAetherManager.trafficState.collectAsStateWithLifecycle()
     val connectionInfo by HamedAetherManager.connectionInfo.collectAsStateWithLifecycle()
+    val preparationStatus by HamedAetherManager.preparationStatus.collectAsStateWithLifecycle()
 
     // Ensure Aether profile is present
     LaunchedEffect(Unit) {
@@ -106,15 +107,21 @@ fun HamedAetherScreen(
         }
     }
 
-    // Traffic monitoring lifecycle
+    // Auto real ping test on connect and reset on disconnect
     LaunchedEffect(isRunning) {
         if (isRunning) {
-            HamedAetherManager.startTrafficMonitoring()
-            // Auto test connection on connect
             delay(1500)
-            HamedAetherManager.runRealHttpsTest()
+            onAction(MainAction.TestCurrentServer)
         } else {
-            HamedAetherManager.stopTrafficMonitoring()
+            HamedAetherManager.resetTraffic()
+            HamedAetherManager.resetConnectionInfo()
+        }
+    }
+
+    // Sync real test result from Xray/CoreServiceManager into connectionInfo
+    LaunchedEffect(status) {
+        if (status is MainStatus.ConnectionTest) {
+            HamedAetherManager.updateFromTestResult(status.result)
         }
     }
 
@@ -343,11 +350,16 @@ fun HamedAetherScreen(
                         )
 
                         // HTTPS Ping Button & Badge
+                        val isTesting = uiState.isTesting || connectionInfo.isTesting
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (connectionInfo.pingMs >= 0) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.clickable {
-                                HamedAetherManager.runRealHttpsTest()
+                                if (isRunning) {
+                                    onAction(MainAction.TestCurrentServer)
+                                } else {
+                                    com.v2ray.ang.extension.toast(context, R.string.hamed_please_connect_first)
+                                }
                             }
                         ) {
                             Row(
@@ -355,7 +367,7 @@ fun HamedAetherScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                if (connectionInfo.isTesting) {
+                                if (isTesting) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(14.dp),
                                         strokeWidth = 2.dp,
@@ -366,12 +378,16 @@ fun HamedAetherScreen(
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 } else {
-                                    val pingText = if (connectionInfo.pingMs >= 0) "${connectionInfo.pingMs} ms"
-                                    else stringResource(R.string.hamed_test_https)
+                                    val pingText = when {
+                                        connectionInfo.pingMs >= 0 -> "${connectionInfo.pingMs} ms"
+                                        isRunning -> stringResource(R.string.hamed_test_https)
+                                        else -> "---"
+                                    }
                                     val pingColor = when {
                                         connectionInfo.pingMs in 0..200 -> Color(0xFF2E7D32)
                                         connectionInfo.pingMs > 200 -> Color(0xFFEF6C00)
-                                        else -> MaterialTheme.colorScheme.primary
+                                        isRunning -> MaterialTheme.colorScheme.primary
+                                        else -> MaterialTheme.colorScheme.outline
                                     }
                                     Text(
                                         text = pingText,
@@ -513,7 +529,13 @@ fun HamedAetherScreen(
                             }
 
                             IconButton(
-                                onClick = { HamedAetherManager.runRealHttpsTest() },
+                                onClick = {
+                                    if (isRunning) {
+                                        onAction(MainAction.TestCurrentServer)
+                                    } else {
+                                        com.v2ray.ang.extension.toast(context, R.string.hamed_please_connect_first)
+                                    }
+                                },
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
@@ -558,10 +580,11 @@ fun HamedAetherScreen(
                         label = "pulseScale"
                     )
 
+                    val isConnecting = status is MainStatus.Connecting || preparationStatus != null
                     val buttonBgColor by animateColorAsState(
                         targetValue = when {
                             isRunning -> Color(0xFF2E7D32)
-                            status is MainStatus.Connecting -> Color(0xFFF57F17)
+                            isConnecting -> Color(0xFFF57F17)
                             else -> MaterialTheme.colorScheme.primary
                         },
                         label = "buttonBgColor"
@@ -578,10 +601,12 @@ fun HamedAetherScreen(
                             .background(buttonBgColor)
                             .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
                             .clickable {
-                                onAction(MainAction.ToggleService)
+                                if (!isConnecting) {
+                                    onAction(MainAction.ToggleService)
+                                }
                             }
                     ) {
-                        if (status is MainStatus.Connecting) {
+                        if (isConnecting) {
                             CircularProgressIndicator(
                                 color = Color.White,
                                 modifier = Modifier.size(42.dp),
@@ -598,18 +623,23 @@ fun HamedAetherScreen(
                     }
 
                     // Button Action Label
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    ) {
                         Text(
                             text = when {
+                                preparationStatus != null -> preparationStatus!!
                                 isRunning -> stringResource(R.string.hamed_btn_disconnect)
-                                status is MainStatus.Connecting -> stringResource(R.string.hamed_btn_connecting)
+                                status is MainStatus.Connecting -> status.message.ifBlank { stringResource(R.string.hamed_btn_connecting) }
                                 else -> stringResource(R.string.hamed_btn_connect)
                             },
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
+                                fontSize = 16.sp
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
 
                         if (isRunning) {

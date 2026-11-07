@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Hamed Aether</string>
     <string name="app_widget_name">تعویض</string>
@@ -29,6 +29,7 @@
     <string name="hamed_tile_dashboard_title">داشبورد اتصال</string>
     <string name="hamed_test_https">تست واقعی HTTPS</string>
     <string name="hamed_testing_https">در حال تست اتصال...</string>
+    <string name="hamed_please_connect_first">لطفاً ابتدا متصل شوید</string>
     <string name="hamed_download">دانلود</string>
     <string name="hamed_upload">آپلود</string>
     <string name="hamed_ip_flag">آی‌پی و کشور</string>

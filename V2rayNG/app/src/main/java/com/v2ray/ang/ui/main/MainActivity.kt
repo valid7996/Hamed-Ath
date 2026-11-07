@@ -176,11 +176,27 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun handleFabAction() {
         if (mainViewModel.uiState.value.isRunning) {
             LauncherManager.stopService(this)
+            com.v2ray.ang.handler.HamedAetherManager.resetTraffic()
+            com.v2ray.ang.handler.HamedAetherManager.resetConnectionInfo()
             // A service whose process died takes no stop and answers nothing; asking for its state right
             // after lets that silence show the screen as stopped instead of leaving it connected.
             mainViewModel.onAction(MainAction.RefreshServiceState)
         } else {
-            requestServiceStart()
+            com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(getString(R.string.aether_keys_missing))
+            com.v2ray.ang.handler.HamedAetherManager.prepareAndConnect(
+                context = this,
+                onStatusChange = { msg ->
+                    com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(msg)
+                },
+                onSuccess = { _ ->
+                    com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
+                    requestServiceStart()
+                },
+                onError = { err ->
+                    com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
+                    toastError(err)
+                }
+            )
         }
     }
 

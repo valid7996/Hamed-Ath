@@ -232,6 +232,7 @@ object AppConfig {
 
     /** The service is up but the selected profile cannot carry traffic yet; content is the localized reason. */
     const val MSG_STATE_CONNECTING = 33
+    const val MSG_STATE_SPEED = 34
     const val MSG_STATE_STOP = 4
     const val MSG_STATE_STOP_SUCCESS = 41
     const val MSG_STATE_RESTART = 5

@@ -195,6 +195,17 @@ class MainViewModel(
                 }
             }
 
+            is MainServiceEvent.SpeedUpdate -> {
+                if (uiState.value.isRunning) {
+                    com.v2ray.ang.handler.HamedAetherManager.updateTrafficFromCore(
+                        event.upSpeed,
+                        event.downSpeed,
+                        event.upBytes,
+                        event.downBytes
+                    )
+                }
+            }
+
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
@@ -1097,6 +1108,9 @@ class MainViewModel(
 
     // ---------- Running state ----------
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
+        if (!running) {
+            com.v2ray.ang.handler.HamedAetherManager.resetTraffic()
+        }
         if (!running || clearTestingText) testRequests.invalidateCurrent()
         _uiState.update { state ->
             state.copy(

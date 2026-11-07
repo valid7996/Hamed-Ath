@@ -56,6 +56,14 @@ class MainRepository(
                     safeIntent.getStringExtra("content")
                 )
                 AppConfig.MSG_STATE_CONNECTING -> MainServiceEvent.StateConnecting(safeIntent.getStringExtra("content").orEmpty())
+                AppConfig.MSG_STATE_SPEED -> {
+                    val parts = safeIntent.getStringExtra("content").orEmpty().split(",")
+                    val up = parts.getOrNull(0)?.toLongOrNull() ?: 0L
+                    val down = parts.getOrNull(1)?.toLongOrNull() ?: 0L
+                    val upBytes = parts.getOrNull(2)?.toLongOrNull() ?: 0L
+                    val downBytes = parts.getOrNull(3)?.toLongOrNull() ?: 0L
+                    MainServiceEvent.SpeedUpdate(up, down, upBytes, downBytes)
+                }
 
                 AppConfig.MSG_STATE_STOP_SUCCESS -> MainServiceEvent.StateStopSuccess
                 AppConfig.MSG_MEASURE_DELAY_RESULT -> safeIntent

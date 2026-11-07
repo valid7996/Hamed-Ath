@@ -29,6 +29,7 @@
     <string name="hamed_tile_dashboard_title">Connection Dashboard</string>
     <string name="hamed_test_https">Real HTTPS Test</string>
     <string name="hamed_testing_https">Testing connection...</string>
+    <string name="hamed_please_connect_first">Please connect first</string>
     <string name="hamed_download">Download</string>
     <string name="hamed_upload">Upload</string>
     <string name="hamed_ip_flag">IP &amp; Location</string>
