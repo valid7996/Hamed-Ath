@@ -83,6 +83,17 @@ object AppConfig {
     const val PREF_AETHER_KEYS_FINAL_MASK = "pref_aether_keys_final_mask"
     const val PREF_AETHER_KEYS_DIAL_MODE = "pref_aether_keys_dial_mode"
     const val PREF_AETHER_KEYS_COMMAND = "pref_aether_keys_command"
+
+    /** Hamed Aether: Global defaults and active overrides for Masque and WireGuard */
+    const val PREF_AETHER_TRANSPORT = "pref_aether_transport"
+    const val PREF_AETHER_MASQUE_SCAN_MODE = "pref_aether_masque_scan_mode"
+    const val PREF_AETHER_WG_SCAN_MODE = "pref_aether_wg_scan_mode"
+    const val PREF_AETHER_MASQUE_SNI_OVERRIDE = "pref_aether_masque_sni_override"
+    const val PREF_AETHER_FRAGMENT_ENABLED = "pref_aether_fragment_enabled"
+    const val PREF_AETHER_FRAGMENT_SIZE_OVERRIDE = "pref_aether_fragment_size_override"
+    const val PREF_AETHER_FRAGMENT_DELAY_OVERRIDE = "pref_aether_fragment_delay_override"
+    const val PREF_AETHER_ECH_ENABLED = "pref_aether_ech_enabled"
+    const val PREF_AETHER_OBFUSCATION_OVERRIDE = "pref_aether_obfuscation_override"
     const val PREF_REMOTE_DNS = "pref_remote_dns"
     const val PREF_DOMESTIC_DNS = "pref_domestic_dns"
     const val PREF_DNS_HOSTS = "pref_dns_hosts"

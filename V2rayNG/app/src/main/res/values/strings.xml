@@ -45,6 +45,28 @@
     <string name="hamed_settings_mode_summary">Switch between VPN (TUN) and Proxy mode</string>
     <string name="hamed_settings_per_app">Per-app Proxy Settings</string>
 
+    <string name="hamed_section_masque">Masque Settings</string>
+    <string name="hamed_masque_transport">Masque Transport</string>
+    <string name="hamed_masque_scan_mode">Masque Scan Mode</string>
+    <string name="hamed_masque_protocol_variant">Masque Protocol Variant</string>
+    <string name="hamed_masque_sni">Masque SNI</string>
+    <string name="hamed_masque_fragment">TLS Fragmentation</string>
+    <string name="hamed_masque_fragment_summary">Split TLS ClientHello packets to bypass censorship (Default: Enabled)</string>
+    <string name="hamed_masque_fragment_size">Fragment Size</string>
+    <string name="hamed_masque_fragment_delay">Fragment Delay (ms)</string>
+    <string name="hamed_masque_ech">Encrypted Client Hello (ECH)</string>
+    <string name="hamed_masque_ech_summary">Encrypt TLS handshake SNI with Cloudflare ECH</string>
+
+    <string name="hamed_section_wireguard">WireGuard Settings</string>
+    <string name="hamed_wg_scan_mode">WireGuard Scan Mode</string>
+    <string name="hamed_wg_obfuscation">WireGuard Obfuscation</string>
+    <string name="hamed_wg_renew_keys">Register / Renew WARP Keys</string>
+    <string name="hamed_wg_renew_keys_summary">Renew Cloudflare identity and keys for WireGuard tunnel</string>
+
+    <string name="hamed_section_general">General &amp; UI Settings</string>
+    <string name="hamed_general_speed">Show Real-Time Speed Notification</string>
+    <string name="hamed_general_speed_summary">Display real-time download and upload speeds in status bar (Default: On)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether service</string>
     <string name="notification_channel_subscription_updates">Subscription updates</string>

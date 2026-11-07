@@ -103,7 +103,7 @@ object HamedAetherManager {
             server = ""
             serverPort = "2408"
             aetherProtocol = AetherProtocol.MASQUE.type
-            aetherTransport = AetherTransport.HTTP3.type
+            aetherTransport = AetherTransport.HTTP2.type
             aetherMasqueSni = AppConfig.AETHER_MASQUE_SNI
             aetherObfuscation = AetherObfuscation.AUTO.type
             aetherIpVersion = AetherIpVersion.V4.type
@@ -113,7 +113,9 @@ object HamedAetherManager {
             aetherFragment = true
             aetherFragmentSize = "10-30"
             aetherFragmentDelay = "10-20"
+            aetherScanMode = "balanced"
         }
+        applySettingsToProfile(profile)
 
         val guid = MmkvManager.encodeServerConfig("", profile)
         MmkvManager.setSelectServer(guid)
@@ -133,7 +135,7 @@ object HamedAetherManager {
                 server = ""
                 serverPort = "2408"
                 aetherProtocol = AetherProtocol.MASQUE.type
-                aetherTransport = AetherTransport.HTTP3.type
+                aetherTransport = AetherTransport.HTTP2.type
                 aetherMasqueSni = AppConfig.AETHER_MASQUE_SNI
                 aetherObfuscation = AetherObfuscation.AUTO.type
                 aetherIpVersion = AetherIpVersion.V4.type
@@ -143,10 +145,37 @@ object HamedAetherManager {
                 aetherFragment = true
                 aetherFragmentSize = "10-30"
                 aetherFragmentDelay = "10-20"
+                aetherScanMode = "balanced"
             }
+            applySettingsToProfile(profile)
             MmkvManager.encodeServerConfig(guid, profile)
         }
         return Pair(guid, profile)
+    }
+
+    /**
+     * Applies global Masque and WireGuard settings configured in SettingsActivity to the given profile.
+     */
+    fun applySettingsToProfile(profile: ProfileItem) {
+        val transport = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_TRANSPORT, AetherTransport.HTTP2.type) ?: AetherTransport.HTTP2.type
+        val masqueScanMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SCAN_MODE, "balanced") ?: "balanced"
+        val wgScanMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_WG_SCAN_MODE, "balanced") ?: "balanced"
+        val sni = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SNI_OVERRIDE, AppConfig.AETHER_MASQUE_SNI) ?: AppConfig.AETHER_MASQUE_SNI
+        val fragment = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, true)
+        val fragmentSize = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_SIZE_OVERRIDE, "10-30") ?: "10-30"
+        val fragmentDelay = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_DELAY_OVERRIDE, "10-20") ?: "10-20"
+        val ech = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_ECH_ENABLED, false)
+        val obfs = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, AetherObfuscation.AUTO.type) ?: AetherObfuscation.AUTO.type
+
+        val protocol = AetherProtocol.fromString(profile.aetherProtocol)
+        profile.aetherTransport = transport
+        profile.aetherMasqueSni = sni
+        profile.aetherFragment = fragment
+        profile.aetherFragmentSize = fragmentSize
+        profile.aetherFragmentDelay = fragmentDelay
+        profile.aetherEch = ech
+        profile.aetherScanMode = if (protocol.overMasque) masqueScanMode else wgScanMode
+        profile.aetherObfuscation = obfs
     }
 
     /**
@@ -200,6 +229,8 @@ object HamedAetherManager {
         scope.launch {
             try {
                 val (guid, profile) = getActiveAetherProfile()
+                applySettingsToProfile(profile)
+                MmkvManager.encodeServerConfig(guid, profile)
                 val protocol = AetherProtocol.fromString(profile.aetherProtocol)
 
                 // 1. Verify and obtain keys if missing

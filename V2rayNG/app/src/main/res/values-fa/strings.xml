@@ -44,6 +44,28 @@
     <string name="hamed_settings_mode_title">حالت اتصال</string>
     <string name="hamed_settings_mode_summary">تغییر بین حالت VPN (TUN) و حالت پروکسی (Proxy)</string>
     <string name="hamed_settings_per_app">تفکیک و انتخاب برنامه‌ها (Per-app Proxy)</string>
+
+    <string name="hamed_section_masque">تنظیمات Masque</string>
+    <string name="hamed_masque_transport">ترانسپورت Masque</string>
+    <string name="hamed_masque_scan_mode">حالت اسکن Masque</string>
+    <string name="hamed_masque_protocol_variant">حالت پروتکل Masque</string>
+    <string name="hamed_masque_sni">SNI اختصاصی Masque</string>
+    <string name="hamed_masque_fragment">تکه‌تکه سازی پکت‌های TLS (Fragment)</string>
+    <string name="hamed_masque_fragment_summary">شکستن بسته‌های ClientHello جهت دور زدن فیلترینگ شدید (پیش‌فرض فعال)</string>
+    <string name="hamed_masque_fragment_size">اندازه تکه‌ها (Size)</string>
+    <string name="hamed_masque_fragment_delay">تاخیر ارسال تکه‌ها (Delay)</string>
+    <string name="hamed_masque_ech">رمزنگاری سرور هلو (ECH)</string>
+    <string name="hamed_masque_ech_summary">رمزگذاری هدر SNI با استاندارد Cloudflare ECH</string>
+
+    <string name="hamed_section_wireguard">تنظیمات وایرگارد (WireGuard)</string>
+    <string name="hamed_wg_scan_mode">حالت اسکن WireGuard</string>
+    <string name="hamed_wg_obfuscation">مبهم‌سازی ترافیک (Obfuscation)</string>
+    <string name="hamed_wg_renew_keys">ثبت و تمدید کلیدهای WARP</string>
+    <string name="hamed_wg_renew_keys_summary">دریافت حساب و کلید اختصاصی WireGuard از کلودفلر</string>
+
+    <string name="hamed_section_general">تنظیمات عمومی و کاربری</string>
+    <string name="hamed_general_speed">نمایش سرعت زنده در نوار اعلان</string>
+    <string name="hamed_general_speed_summary">نمایش سرعت دانلود، آپلود و حجم ترافیک (پیش‌فرض فعال)</string>
     <!-- Notifications -->
     <string name="notification_channel_service">سرویس PattNG</string>
     <string name="notification_channel_subscription_updates">به‌روزرسانی اشتراک‌ها</string>

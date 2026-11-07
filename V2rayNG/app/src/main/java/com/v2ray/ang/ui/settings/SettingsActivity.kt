@@ -36,6 +36,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.VPN
 import com.v2ray.ang.R
+import com.v2ray.ang.enums.AetherProtocol
+import com.v2ray.ang.handler.HamedAetherManager
 import com.v2ray.ang.ui.AboutActivity
 import com.v2ray.ang.ui.perappproxy.PerAppProxyActivity
 import com.v2ray.ang.ui.server.ServerAetherActivity
@@ -112,14 +114,42 @@ fun SettingsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val systemVpnSettingsAvailable by viewModel.systemVpnSettingsAvailable.collectAsStateWithLifecycle()
     val aetherListenPort by viewModel.aetherListenPort.collectAsStateWithLifecycle()
-    var uiSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var vpnSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var coreSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var masqueSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var wireguardSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var generalSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var vpnSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+    var coreSettingsExpanded by rememberSaveable { mutableStateOf(false) }
     var muxSettingsExpanded by rememberSaveable { mutableStateOf(false) }
     var observatorySettingsExpanded by rememberSaveable { mutableStateOf(false) }
-    var advancedSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var modeSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var aetherGroupExpanded by rememberSaveable { mutableStateOf(true) }
+    var advancedSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+    var modeSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+
+    var aetherTransport by rememberMmkvString(AppConfig.PREF_AETHER_TRANSPORT, "h2")
+    var masqueScanMode by rememberMmkvString(AppConfig.PREF_AETHER_MASQUE_SCAN_MODE, "balanced")
+    var wgScanMode by rememberMmkvString(AppConfig.PREF_AETHER_WG_SCAN_MODE, "balanced")
+    var masqueSni by rememberMmkvString(AppConfig.PREF_AETHER_MASQUE_SNI_OVERRIDE, AppConfig.AETHER_MASQUE_SNI)
+    var aetherFragment by rememberMmkvBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, true)
+    var aetherFragmentSize by rememberMmkvString(AppConfig.PREF_AETHER_FRAGMENT_SIZE_OVERRIDE, "10-30")
+    var aetherFragmentDelay by rememberMmkvString(AppConfig.PREF_AETHER_FRAGMENT_DELAY_OVERRIDE, "10-20")
+    var aetherEch by rememberMmkvBool(AppConfig.PREF_AETHER_ECH_ENABLED, false)
+    var aetherObfuscation by rememberMmkvString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, "auto")
+
+    fun syncAetherProfile() {
+        val (guid, profile) = HamedAetherManager.getActiveAetherProfile()
+        HamedAetherManager.applySettingsToProfile(profile)
+        MmkvManager.encodeServerConfig(guid, profile)
+    }
+
+    val (_, initialActiveProf) = remember { HamedAetherManager.getActiveAetherProfile() }
+    var masqueVariant by rememberSaveable {
+        mutableStateOf(
+            when (initialActiveProf.aetherProtocol) {
+                AetherProtocol.MIM.type -> "mim"
+                AetherProtocol.WG_OVER_MASQUE.type -> "wireguard-over-masque"
+                else -> "masque"
+            }
+        )
+    }
 
     var localDns by rememberMmkvBool(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
     var fakeDns by rememberMmkvBool(AppConfig.PREF_FAKE_DNS_ENABLED, true)
@@ -156,7 +186,7 @@ fun SettingsScreen(
     var socksEnableUdp by rememberMmkvBool(AppConfig.PREF_SOCKS_ENABLE_UDP, AppConfig.DEFAULT_SOCKS_ENABLE_UDP)
     var proxySharing by rememberMmkvBool(AppConfig.PREF_PROXY_SHARING, false)
 
-    var speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, false)
+    var speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, true)
     var confirmRemove by rememberMmkvBool(AppConfig.PREF_CONFIRM_REMOVE, false)
     var doubleColumnDisplay by rememberMmkvBool(AppConfig.PREF_DOUBLE_COLUMN_DISPLAY, false)
     var groupAllDisplay by rememberMmkvBool(AppConfig.PREF_GROUP_ALL_DISPLAY, false)
@@ -218,6 +248,14 @@ fun SettingsScreen(
     val observatoryLeastLoadMethodValues = stringArrayResource(R.array.observatory_least_load_method).toList()
     val modeEntries = stringArrayResource(R.array.mode_entries).toList()
     val modeValues = stringArrayResource(R.array.mode_value).toList()
+    val transportEntries = stringArrayResource(R.array.aether_transport_entries).toList()
+    val transportValues = stringArrayResource(R.array.aether_transport_values).toList()
+    val scanEntries = stringArrayResource(R.array.aether_scan_entries).toList()
+    val scanValues = stringArrayResource(R.array.aether_scan_values).toList()
+    val obfuscationEntries = stringArrayResource(R.array.aether_obfuscation_entries).toList()
+    val obfuscationValues = stringArrayResource(R.array.aether_obfuscation_values).toList()
+    val masqueVariantEntries = stringArrayResource(R.array.hamed_masque_protocol_entries).toList()
+    val masqueVariantValues = stringArrayResource(R.array.hamed_masque_protocol_values).toList()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -237,12 +275,144 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
         ) {
             val context = LocalContext.current
+
+            // ==========================================
+            // بخش اول: تنظیمات Masque
+            // ==========================================
             CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.hamed_settings_aether_title),
-                expanded = aetherGroupExpanded,
-                onExpandedChange = { aetherGroupExpanded = it }
+                title = stringResource(R.string.hamed_section_masque),
+                expanded = masqueSettingsExpanded,
+                onExpandedChange = { masqueSettingsExpanded = it }
             )
-            if (aetherGroupExpanded) {
+            if (masqueSettingsExpanded) {
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_masque_transport),
+                    entries = transportEntries,
+                    values = transportValues,
+                    selectedValue = aetherTransport,
+                    onSelected = {
+                        aetherTransport = it
+                        syncAetherProfile()
+                    }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_masque_scan_mode),
+                    entries = scanEntries,
+                    values = scanValues,
+                    selectedValue = masqueScanMode,
+                    onSelected = {
+                        masqueScanMode = it
+                        syncAetherProfile()
+                    }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_masque_protocol_variant),
+                    entries = masqueVariantEntries,
+                    values = masqueVariantValues,
+                    selectedValue = masqueVariant,
+                    onSelected = {
+                        masqueVariant = it
+                        val proto = when (it) {
+                            "mim" -> AetherProtocol.MIM
+                            "wireguard-over-masque" -> AetherProtocol.WG_OVER_MASQUE
+                            else -> AetherProtocol.MASQUE
+                        }
+                        HamedAetherManager.updateProtocol(proto)
+                    }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.hamed_masque_sni),
+                    value = masqueSni,
+                    onValueChanged = {
+                        masqueSni = it
+                        syncAetherProfile()
+                    }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.hamed_masque_fragment),
+                    summary = stringResource(R.string.hamed_masque_fragment_summary),
+                    checked = aetherFragment,
+                    onCheckedChange = {
+                        aetherFragment = it
+                        syncAetherProfile()
+                    }
+                )
+                if (aetherFragment) {
+                    SettingsEditItem(
+                        title = stringResource(R.string.hamed_masque_fragment_size),
+                        value = aetherFragmentSize,
+                        onValueChanged = {
+                            aetherFragmentSize = it
+                            syncAetherProfile()
+                        }
+                    )
+                    SettingsEditItem(
+                        title = stringResource(R.string.hamed_masque_fragment_delay),
+                        value = aetherFragmentDelay,
+                        keyboardNumber = true,
+                        onValueChanged = {
+                            aetherFragmentDelay = it
+                            syncAetherProfile()
+                        }
+                    )
+                }
+                SettingsSwitchItem(
+                    title = stringResource(R.string.hamed_masque_ech),
+                    summary = stringResource(R.string.hamed_masque_ech_summary),
+                    checked = aetherEch,
+                    onCheckedChange = {
+                        aetherEch = it
+                        syncAetherProfile()
+                    }
+                )
+            }
+
+            // ==========================================
+            // بخش دوم: تنظیمات وایرگارد (WireGuard)
+            // ==========================================
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.hamed_section_wireguard),
+                expanded = wireguardSettingsExpanded,
+                onExpandedChange = { wireguardSettingsExpanded = it }
+            )
+            if (wireguardSettingsExpanded) {
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_wg_scan_mode),
+                    entries = scanEntries,
+                    values = scanValues,
+                    selectedValue = wgScanMode,
+                    onSelected = {
+                        wgScanMode = it
+                        syncAetherProfile()
+                    }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_wg_obfuscation),
+                    entries = obfuscationEntries,
+                    values = obfuscationValues,
+                    selectedValue = aetherObfuscation,
+                    onSelected = {
+                        aetherObfuscation = it
+                        syncAetherProfile()
+                    }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_lock_24dp),
+                    title = stringResource(R.string.hamed_wg_renew_keys),
+                    subtitle = stringResource(R.string.hamed_wg_renew_keys_summary),
+                    onClick = { context.startActivity(Intent(context, ServerAetherKeysActivity::class.java)) }
+                )
+            }
+
+            // ==========================================
+            // بخش سوم: تنظیمات عمومی و کاربری
+            // ==========================================
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.hamed_section_general),
+                expanded = generalSettingsExpanded,
+                onExpandedChange = { generalSettingsExpanded = it }
+            )
+            if (generalSettingsExpanded) {
                 SettingsListItem(
                     title = stringResource(R.string.hamed_settings_mode_title),
                     entries = modeEntries,
@@ -250,82 +420,17 @@ fun SettingsScreen(
                     selectedValue = mode,
                     onSelected = { mode = it }
                 )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_routing_24dp),
-                    title = stringResource(R.string.title_aether_core),
-                    subtitle = stringResource(R.string.hamed_settings_aether_summary),
-                    onClick = { context.startActivity(Intent(context, ServerAetherActivity::class.java)) }
-                )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_lock_24dp),
-                    title = stringResource(R.string.hamed_renew_warp_keys),
-                    subtitle = stringResource(R.string.aether_action_renew_key),
-                    onClick = { context.startActivity(Intent(context, ServerAetherKeysActivity::class.java)) }
+                SettingsSwitchItem(
+                    title = stringResource(R.string.hamed_general_speed),
+                    summary = stringResource(R.string.hamed_general_speed_summary),
+                    checked = speedEnabled,
+                    onCheckedChange = { speedEnabled = it }
                 )
                 SettingsMenuItem(
                     icon = painterResource(R.drawable.ic_per_apps_24dp),
                     title = stringResource(R.string.hamed_settings_per_app),
                     subtitle = stringResource(R.string.title_pref_per_app_proxy),
                     onClick = { context.startActivity(Intent(context, PerAppProxyActivity::class.java)) }
-                )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_about_24dp),
-                    title = stringResource(R.string.title_about),
-                    subtitle = stringResource(R.string.hamed_aether_title),
-                    onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
-                )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_source_code_24dp),
-                    title = stringResource(R.string.title_source_code),
-                    subtitle = AppConfig.APP_URL,
-                    onClick = { Utils.openUri(context, AppConfig.APP_URL) }
-                )
-            }
-            CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.title_ui_settings),
-                expanded = uiSettingsExpanded,
-                onExpandedChange = { uiSettingsExpanded = it }
-            )
-            if (uiSettingsExpanded) {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_speed_enabled),
-                    summary = stringResource(R.string.summary_pref_speed_enabled),
-                    checked = speedEnabled,
-                    onCheckedChange = { speedEnabled = it }
-                )
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_confirm_remove),
-                    summary = stringResource(R.string.summary_pref_confirm_remove),
-                    checked = confirmRemove,
-                    onCheckedChange = { confirmRemove = it }
-                )
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_double_column_display),
-                    summary = stringResource(R.string.summary_pref_double_column_display),
-                    checked = doubleColumnDisplay,
-                    onCheckedChange = {
-                        doubleColumnDisplay = it
-                        SettingsChangeManager.makeSetupGroupTab()
-                    }
-                )
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_group_all_display),
-                    summary = stringResource(R.string.summary_pref_group_all_display),
-                    checked = groupAllDisplay,
-                    onCheckedChange = {
-                        groupAllDisplay = it
-                        SettingsChangeManager.makeSetupGroupTab()
-                    }
-                )
-                SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_dynamic_color),
-                    summary = stringResource(R.string.summary_pref_dynamic_color),
-                    checked = dynamicColor,
-                    enabled = dynamicColorSupported,
-                    onCheckedChange = {
-                        dynamicColor = it
-                        ThemeManager.setDynamicColorEnabled(it)
-                    }
                 )
                 SettingsListItem(
                     title = stringResource(R.string.title_language),
@@ -346,6 +451,34 @@ fun SettingsScreen(
                         uiModeNight = it
                         ThemeManager.setThemeMode(it)
                     }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_dynamic_color),
+                    summary = stringResource(R.string.summary_pref_dynamic_color),
+                    checked = dynamicColor,
+                    enabled = dynamicColorSupported,
+                    onCheckedChange = {
+                        dynamicColor = it
+                        ThemeManager.setDynamicColorEnabled(it)
+                    }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_routing_24dp),
+                    title = stringResource(R.string.title_aether_core),
+                    subtitle = stringResource(R.string.hamed_settings_aether_summary),
+                    onClick = { context.startActivity(Intent(context, ServerAetherActivity::class.java)) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_about_24dp),
+                    title = stringResource(R.string.title_about),
+                    subtitle = stringResource(R.string.hamed_aether_title),
+                    onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_source_code_24dp),
+                    title = stringResource(R.string.title_source_code),
+                    subtitle = AppConfig.APP_URL,
+                    onClick = { Utils.openUri(context, AppConfig.APP_URL) }
                 )
             }
 
