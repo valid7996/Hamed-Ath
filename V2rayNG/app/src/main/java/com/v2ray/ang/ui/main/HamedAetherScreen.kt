@@ -808,10 +808,10 @@ fun HamedConnectSection(
     isConnecting: Boolean,
     preparationStatus: String?,
     elapsedSeconds: Long,
-    activeProtocol: HamedProtocolType,
+    activeProtocol: AetherProtocol,
     activeChain: HamedChainType,
     activePsiphonRegion: String,
-    activeObfs: HamedObfsType,
+    activeObfs: AetherObfuscation,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
