@@ -66,6 +66,9 @@
     <string name="hamed_section_general">General &amp; UI Settings</string>
     <string name="hamed_general_speed">Show Real-Time Speed Notification</string>
     <string name="hamed_general_speed_summary">Display real-time download and upload speeds in status bar (Default: On)</string>
+    <string name="hamed_psiphon_country_title">Psiphon Exit Country</string>
+    <string name="hamed_carrier_label">Carrier</string>
+    <string name="hamed_exit_label">Exit</string>
 
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether service</string>

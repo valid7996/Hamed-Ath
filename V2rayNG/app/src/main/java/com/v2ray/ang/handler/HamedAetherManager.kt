@@ -47,6 +47,9 @@ data class HamedConnectionInfo(
     val ip: String = "---",
     val country: String = "---",
     val flagEmoji: String = "🌐",
+    val carrierFlagEmoji: String = "🇺🇸",
+    val carrierName: String = "Cloudflare WARP",
+    val isChained: Boolean = false,
     val pingMs: Long = -1L,
     val isTesting: Boolean = false,
     val testError: String? = null,
@@ -207,6 +210,16 @@ object HamedAetherManager {
     }
 
     /**
+     * Updates the Psiphon exit country/region code (e.g. "US", "DE", "GB", or empty for auto).
+     */
+    fun updatePsiphonRegion(region: String): ProfileItem {
+        val (guid, profile) = getActiveAetherProfile()
+        profile.aetherPsiphonRegion = region.trim().uppercase().ifEmpty { null }
+        MmkvManager.encodeServerConfig(guid, profile)
+        return profile
+    }
+
+    /**
      * Updates obfuscation mode.
      */
     fun updateObfuscation(obf: AetherObfuscation): ProfileItem {
@@ -358,10 +371,75 @@ object HamedAetherManager {
     }
 
     /**
+     * Fast and smart IP detection via Cloudflare trace endpoint.
+     * Detects public IP, country code, emoji flag, and ping latency instantly.
+     */
+    fun fetchFastPublicIp(onComplete: ((HamedConnectionInfo) -> Unit)? = null) {
+        scope.launch {
+            _connectionInfo.value = _connectionInfo.value.copy(isTesting = true)
+            val startTime = System.currentTimeMillis()
+            var detected = false
+            try {
+                val url = java.net.URL("https://cloudflare.com/cdn-cgi/trace")
+                val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    connectTimeout = 3500
+                    readTimeout = 3500
+                    instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "Mozilla/5.0 HamedAether")
+                }
+                val code = conn.responseCode
+                val latency = System.currentTimeMillis() - startTime
+                if (code == 200) {
+                    val lines = conn.inputStream.bufferedReader().readLines()
+                    var ip = ""
+                    var loc = ""
+                    for (line in lines) {
+                        if (line.startsWith("ip=")) ip = line.substring(3).trim()
+                        if (line.startsWith("loc=")) loc = line.substring(4).trim()
+                    }
+                    if (ip.isNotBlank()) {
+                        val (_, profile) = getActiveAetherProfile()
+                        val isChained = AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
+                                        AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
+
+                        val exitFlag = countryCodeToEmojiFlag(loc)
+                        val info = HamedConnectionInfo(
+                            ip = ip,
+                            country = loc.ifBlank { "OK" },
+                            flagEmoji = exitFlag,
+                            carrierFlagEmoji = "🇺🇸",
+                            carrierName = "Cloudflare WARP",
+                            isChained = isChained,
+                            pingMs = latency,
+                            isTesting = false,
+                            testError = null
+                        )
+                        _connectionInfo.value = info
+                        onComplete?.invoke(info)
+                        detected = true
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtil.d(TAG, "Fast trace error: ${e.message}")
+            }
+
+            if (!detected) {
+                _connectionInfo.value = _connectionInfo.value.copy(
+                    isTesting = false,
+                    testError = if (_connectionInfo.value.ip == "---") "تست اتصال..." else null
+                )
+            }
+        }
+    }
+
+    /**
      * Updates the connection info based on a real ConnectionTestResult from CoreServiceManager.
      */
     fun updateFromTestResult(result: ConnectionTestResult) {
         val isSuccessful = result.delayMillis >= 0
+        val (_, profile) = getActiveAetherProfile()
+        val isChained = AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
+                        AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
         val flag = if (isSuccessful) countryCodeToEmojiFlag(result.country) else "🌐"
         val country = if (isSuccessful) (result.country ?: "---") else "---"
         val ip = if (isSuccessful) (result.ipAddress ?: "---") else "---"
@@ -370,6 +448,9 @@ object HamedAetherManager {
             ip = ip,
             country = country,
             flagEmoji = flag,
+            carrierFlagEmoji = "🇺🇸",
+            carrierName = "Cloudflare WARP",
+            isChained = isChained,
             pingMs = result.delayMillis,
             isTesting = false,
             testError = if (!isSuccessful) result.errorMessage.ifBlank { "قطع اتصال" } else null

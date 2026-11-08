@@ -5,6 +5,7 @@ import android.os.SystemClock
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -109,10 +110,12 @@ fun HamedAetherScreen(
         }
     }
 
-    // Auto real ping test on connect and reset on disconnect
+    // Auto fast IP detection and ping test on connect, reset on disconnect
     LaunchedEffect(isRunning) {
         if (isRunning) {
-            delay(1500)
+            delay(500)
+            HamedAetherManager.fetchFastPublicIp()
+            delay(1200)
             onAction(MainAction.TestCurrentServer)
         } else {
             HamedAetherManager.resetTraffic()
@@ -161,6 +164,10 @@ fun HamedAetherScreen(
             else -> HamedChainType.DEFAULT
         }
         mutableStateOf(chain)
+    }
+    var activePsiphonRegion by remember {
+        val (_, prof) = HamedAetherManager.getActiveAetherProfile()
+        mutableStateOf(prof.aetherPsiphonRegion.orEmpty())
     }
     var activeObfs by remember {
         val (_, prof) = HamedAetherManager.getActiveAetherProfile()
@@ -301,14 +308,14 @@ fun HamedAetherScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ==========================================
-            // HERO: Glowing Circular Power Button & Status
+            // HERO: Hamed Aether Shield Status Emblem (Single Connect button is at bottom)
             // ==========================================
             val infiniteTransition = rememberInfiniteTransition(label = "pulse")
             val pulseScale by infiniteTransition.animateFloat(
                 initialValue = 1f,
-                targetValue = if (isRunning) 1.06f else 1f,
+                targetValue = if (isRunning) 1.05f else 1f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(1200, easing = FastOutSlowInEasing),
+                    animation = tween(1400, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "pulseScale"
@@ -326,38 +333,32 @@ fun HamedAetherScreen(
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Circular Glowing Power Button
+                // Shield Status Emblem (Visual status indicator only - no duplicate button)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .scale(pulseScale)
-                        .size(130.dp)
+                        .size(116.dp)
                         .clip(CircleShape)
                         .background(outerGlowBrush)
-                        .padding(4.dp)
+                        .padding(3.5.dp)
                         .clip(CircleShape)
                         .background(HamedThemeColors.InnerCard)
                         .border(1.5.dp, HamedThemeColors.Border, CircleShape)
-                        .clickable {
-                            if (!isConnecting) {
-                                onAction(MainAction.ToggleService)
-                            }
-                        }
                 ) {
                     if (isConnecting) {
                         CircularProgressIndicator(
                             color = HamedThemeColors.AccentCyan,
-                            modifier = Modifier.size(54.dp),
+                            modifier = Modifier.size(50.dp),
                             strokeWidth = 3.5.dp
                         )
                     } else {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_power_24dp),
-                            contentDescription = "Power",
-                            tint = if (isRunning) HamedThemeColors.SuccessGreen else Color.White,
-                            modifier = Modifier.size(52.dp)
+                        Image(
+                            painter = painterResource(R.drawable.ic_hamed_logo),
+                            contentDescription = "Hamed Aether Status",
+                            modifier = Modifier.size(56.dp)
                         )
                     }
                 }
@@ -395,7 +396,7 @@ fun HamedAetherScreen(
                         )
                     } else {
                         Text(
-                            text = "Tap to Connect",
+                            text = "Tap Connect below to start",
                             style = MaterialTheme.typography.bodySmall,
                             color = HamedThemeColors.TextSecondary,
                             modifier = Modifier.padding(top = 2.dp)
@@ -491,6 +492,18 @@ fun HamedAetherScreen(
                             if (isRunning) onAction(MainAction.RestartService)
                         }
                     )
+
+                    // 2.5 Psiphon Country Selector (Shown when Psiphon chain is active)
+                    AnimatedVisibility(visible = activeChain == HamedChainType.PSIPHON) {
+                        HamedPsiphonCountrySelector(
+                            selectedRegion = activePsiphonRegion,
+                            onSelect = { selectedRegion ->
+                                activePsiphonRegion = selectedRegion
+                                HamedAetherManager.updatePsiphonRegion(selectedRegion)
+                                if (isRunning) onAction(MainAction.RestartService)
+                            }
+                        )
+                    }
 
                     // 3. Row: Obfuscation (60%) & Renew WARP Keys (40%)
                     Row(
@@ -655,9 +668,10 @@ fun HamedAetherScreen(
                                 )
 
                                 Spacer(modifier = Modifier.height(8.dp))
-                                // Smooth Cyan Waveform Graph
+                                // Smooth Animated Cyan Waveform Graph
                                 HamedWaveformGraph(
                                     graphColor = HamedThemeColors.AccentCyan,
+                                    isActive = isRunning,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(34.dp)
@@ -708,9 +722,10 @@ fun HamedAetherScreen(
                                 )
 
                                 Spacer(modifier = Modifier.height(8.dp))
-                                // Smooth Purple Waveform Graph
+                                // Smooth Animated Purple Waveform Graph
                                 HamedWaveformGraph(
                                     graphColor = HamedThemeColors.SecondaryPurple,
+                                    isActive = isRunning,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(34.dp)
@@ -719,7 +734,7 @@ fun HamedAetherScreen(
                         }
                     }
 
-                    // IP & Location Row
+                    // IP & Location Row (Smart IP & Flag & Carrier/Exit for chained tunnels)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -735,38 +750,60 @@ fun HamedAetherScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
                                 Surface(
-                                    modifier = Modifier.size(36.dp),
+                                    modifier = Modifier.size(38.dp),
                                     shape = CircleShape,
                                     color = Color(0xFF0C243B)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_globe_24dp),
-                                            contentDescription = null,
-                                            tint = HamedThemeColors.AccentCyan,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        if (connectionInfo.flagEmoji != "🌐") {
+                                            Text(
+                                                text = connectionInfo.flagEmoji,
+                                                fontSize = 20.sp
+                                            )
+                                        } else {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_globe_24dp),
+                                                contentDescription = null,
+                                                tint = HamedThemeColors.AccentCyan,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
                                     }
                                 }
 
                                 Column {
-                                    Text(
-                                        text = "IP & Location",
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = HamedThemeColors.TextPrimary
-                                    )
+                                    if (connectionInfo.isChained) {
+                                        Text(
+                                            text = "${connectionInfo.carrierFlagEmoji} Cloudflare ➔ ${connectionInfo.flagEmoji} Psiphon Exit",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = HamedThemeColors.TextPrimary
+                                        )
+                                    } else {
+                                        val locTitle = if (connectionInfo.country != "---" && connectionInfo.country.isNotBlank()) {
+                                            "${connectionInfo.flagEmoji} ${connectionInfo.country} (${connectionInfo.carrierName})"
+                                        } else {
+                                            "IP & Location"
+                                        }
+                                        Text(
+                                            text = locTitle,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = HamedThemeColors.TextPrimary
+                                        )
+                                    }
+
                                     val ipDisplay = when {
-                                        connectionInfo.ip != "---" -> "${connectionInfo.ip} • ${connectionInfo.country}${if (connectionInfo.pingMs >= 0) " (${connectionInfo.pingMs} ms)" else ""}"
+                                        connectionInfo.ip != "---" -> "${connectionInfo.ip}${if (connectionInfo.pingMs >= 0) " • ${connectionInfo.pingMs} ms" else ""}"
                                         isRunning -> "Fetching IP..."
                                         else -> "Not Connected"
                                     }
                                     Text(
                                         text = ipDisplay,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = HamedThemeColors.TextSecondary
+                                        color = if (connectionInfo.ip != "---") HamedThemeColors.AccentCyan else HamedThemeColors.TextSecondary
                                     )
                                 }
                             }
@@ -774,6 +811,7 @@ fun HamedAetherScreen(
                             IconButton(
                                 onClick = {
                                     if (isRunning) {
+                                        HamedAetherManager.fetchFastPublicIp()
                                         onAction(MainAction.TestCurrentServer)
                                     } else {
                                         context.toast(R.string.hamed_please_connect_first)
@@ -866,7 +904,7 @@ fun HamedAetherScreen(
                     }
                 }
 
-                // Breadcrumbs: WireGuard > Psiphon > Auto
+                // Breadcrumbs: WireGuard > Psiphon (US) > Auto
                 Row(
                     modifier = Modifier.padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -877,9 +915,14 @@ fun HamedAetherScreen(
                         label = activeProtocol.name
                     )
                     Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
+                    val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
+                        "Psiphon (${activePsiphonRegion.uppercase()})"
+                    } else {
+                        activeChain.displayName
+                    }
                     BreadcrumbChip(
                         iconRes = R.drawable.ic_routing_24dp,
-                        label = activeChain.displayName
+                        label = chainLabel
                     )
                     Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
                     BreadcrumbChip(
@@ -922,43 +965,63 @@ fun BreadcrumbChip(iconRes: Int, label: String) {
 }
 
 /**
- * Draws a smooth animated neon waveform curve matching the futuristic dashboard.
+ * Draws a smooth animated neon oscilloscope waveform curve matching the futuristic dashboard.
  */
 @Composable
 fun HamedWaveformGraph(
     graphColor: Color,
+    isActive: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "waveTransition")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = if (isActive) 2400 else 6500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "wavePhase"
+    )
+
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
+        val centerY = height * 0.52f
+        val amplitude = if (isActive) height * 0.32f else height * 0.12f
 
-        val path = Path().apply {
-            moveTo(0f, height * 0.75f)
-            cubicTo(
-                width * 0.25f, height * 0.2f,
-                width * 0.45f, height * 0.95f,
-                width * 0.68f, height * 0.35f
-            )
-            cubicTo(
-                width * 0.85f, height * 0.15f,
-                width * 0.94f, height * 0.65f,
-                width, height * 0.5f
-            )
+        val path = Path()
+        val fillPath = Path()
+        val step = 4f
+        var first = true
+
+        var x = 0f
+        while (x <= width) {
+            val progress = x / width
+            val y = centerY +
+                (kotlin.math.sin(progress * 2 * Math.PI + phase).toFloat() * amplitude * 0.75f) +
+                (kotlin.math.cos(progress * 3.5 * Math.PI - phase * 0.6f).toFloat() * amplitude * 0.25f)
+
+            if (first) {
+                path.moveTo(x, y)
+                fillPath.moveTo(x, y)
+                first = false
+            } else {
+                path.lineTo(x, y)
+                fillPath.lineTo(x, y)
+            }
+            x += step
         }
 
-        val fillPath = Path().apply {
-            addPath(path)
-            lineTo(width, height)
-            lineTo(0f, height)
-            close()
-        }
+        fillPath.lineTo(width, height)
+        fillPath.lineTo(0f, height)
+        fillPath.close()
 
         // Gradient under-glow
         drawPath(
             path = fillPath,
             brush = Brush.verticalGradient(
-                colors = listOf(graphColor.copy(alpha = 0.3f), Color.Transparent)
+                colors = listOf(graphColor.copy(alpha = 0.35f), Color.Transparent)
             )
         )
 
@@ -966,7 +1029,7 @@ fun HamedWaveformGraph(
         drawPath(
             path = path,
             color = graphColor,
-            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
         )
     }
 }
@@ -1268,6 +1331,127 @@ fun HamedObfsSelector(
                     onClick = {
                         expanded = false
                         onSelect(obfs)
+                    }
+                )
+            }
+        }
+    }
+}
+
+data class HamedPsiphonCountry(
+    val code: String,
+    val name: String,
+    val flag: String
+)
+
+private val psiphonCountryList = listOf(
+    HamedPsiphonCountry("", "Auto / Best Location (بهترین موقعیت)", "🌐"),
+    HamedPsiphonCountry("US", "United States (ایالات متحده)", "🇺🇸"),
+    HamedPsiphonCountry("DE", "Germany (آلمان)", "🇩🇪"),
+    HamedPsiphonCountry("GB", "United Kingdom (انگلستان)", "🇬🇧"),
+    HamedPsiphonCountry("NL", "Netherlands (هلند)", "🇳🇱"),
+    HamedPsiphonCountry("CA", "Canada (کانادا)", "🇨🇦"),
+    HamedPsiphonCountry("FR", "France (فرانسه)", "🇫🇷"),
+    HamedPsiphonCountry("CH", "Switzerland (سوئیس)", "🇨🇭"),
+    HamedPsiphonCountry("JP", "Japan (ژاپن)", "🇯🇵"),
+    HamedPsiphonCountry("SG", "Singapore (سنگاپور)", "🇸🇬"),
+    HamedPsiphonCountry("SE", "Sweden (سوئد)", "🇸🇪"),
+    HamedPsiphonCountry("FI", "Finland (فنلاند)", "🇫🇮"),
+    HamedPsiphonCountry("TR", "Turkey (ترکیه)", "🇹🇷"),
+    HamedPsiphonCountry("IT", "Italy (ایتالیا)", "🇮🇹"),
+    HamedPsiphonCountry("ES", "Spain (اسپانیا)", "🇪🇸"),
+    HamedPsiphonCountry("AU", "Australia (استرالیا)", "🇦🇺"),
+    HamedPsiphonCountry("PL", "Poland (لهستان)", "🇵🇱")
+)
+
+@Composable
+fun HamedPsiphonCountrySelector(
+    selectedRegion: String,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val current = psiphonCountryList.find { it.code.equals(selectedRegion, ignoreCase = true) }
+        ?: HamedPsiphonCountry(selectedRegion, selectedRegion.ifBlank { "Auto" }, HamedAetherManager.countryCodeToEmojiFlag(selectedRegion))
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(16.dp),
+            color = HamedThemeColors.InnerCard,
+            border = BorderStroke(1.dp, HamedThemeColors.Border)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier.size(36.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF142442)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = current.flag,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+
+                    Column {
+                        Text(
+                            text = stringResource(R.string.hamed_psiphon_country_title),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = HamedThemeColors.TextSecondary
+                        )
+                        Text(
+                            text = current.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = HamedThemeColors.TextPrimary
+                        )
+                    }
+                }
+
+                Icon(
+                    painter = painterResource(R.drawable.ic_expand_more_24dp),
+                    contentDescription = null,
+                    tint = HamedThemeColors.TextSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .background(HamedThemeColors.CardBackground)
+        ) {
+            psiphonCountryList.forEach { item ->
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Text(text = item.flag, fontSize = 18.sp)
+                    },
+                    text = {
+                        Text(
+                            text = item.name,
+                            fontWeight = if (item.code.equals(selectedRegion, ignoreCase = true)) FontWeight.Bold else FontWeight.Normal,
+                            color = if (item.code.equals(selectedRegion, ignoreCase = true)) HamedThemeColors.AccentCyan else HamedThemeColors.TextPrimary
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(item.code)
                     }
                 )
             }
