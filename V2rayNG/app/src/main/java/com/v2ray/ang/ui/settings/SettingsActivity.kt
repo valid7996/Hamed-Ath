@@ -145,6 +145,7 @@ fun SettingsScreen(
     }
 
     var mode by rememberMmkvString(AppConfig.PREF_MODE, VPN)
+    var buttonPosition by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
     var speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, true)
     var language by remember {
         mutableStateOf(
@@ -168,6 +169,8 @@ fun SettingsScreen(
     val uiModeNightValues = stringArrayResource(R.array.ui_mode_night_value).toList()
     val modeEntries = stringArrayResource(R.array.mode_entries).toList()
     val modeValues = stringArrayResource(R.array.mode_value).toList()
+    val buttonPositionEntries = stringArrayResource(R.array.hamed_button_position_entries).toList()
+    val buttonPositionValues = stringArrayResource(R.array.hamed_button_position_values).toList()
     val transportEntries = stringArrayResource(R.array.aether_transport_entries).toList()
     val transportValues = stringArrayResource(R.array.aether_transport_values).toList()
     val scanEntries = stringArrayResource(R.array.aether_scan_entries).toList()
@@ -334,6 +337,13 @@ fun SettingsScreen(
                 onExpandedChange = { generalSettingsExpanded = it }
             )
             if (generalSettingsExpanded) {
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_button_position_title),
+                    entries = buttonPositionEntries,
+                    values = buttonPositionValues,
+                    selectedValue = buttonPosition,
+                    onSelected = { buttonPosition = it }
+                )
                 SettingsListItem(
                     title = stringResource(R.string.hamed_settings_mode_title),
                     entries = modeEntries,

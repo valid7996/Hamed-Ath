@@ -75,6 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
@@ -82,6 +83,7 @@ import com.v2ray.ang.enums.AetherPsiphon
 import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.handler.HamedAetherManager
+import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.ui.compose.HamedThemeColors
 import com.v2ray.ang.ui.server.ServerAetherKeysActivity
 import kotlinx.coroutines.delay
@@ -174,6 +176,9 @@ fun HamedAetherScreen(
         mutableStateOf(AetherObfuscation.fromString(prof.aetherObfuscation))
     }
 
+    val buttonPosition by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
+    val isConnecting = status is MainStatus.Connecting || preparationStatus != null
+
     val scrollState = rememberScrollState()
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -226,7 +231,7 @@ fun HamedAetherScreen(
                             Image(
                                 painter = painterResource(R.drawable.ic_hamed_logo),
                                 contentDescription = null,
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier.size(28.dp)
                             )
                             Text(
                                 text = "Hamed Aether",
@@ -237,10 +242,27 @@ fun HamedAetherScreen(
                                 color = HamedThemeColors.TextPrimary
                             )
                         }
+                        val statusSubText = when {
+                            preparationStatus != null -> preparationStatus!!
+                            isRunning -> {
+                                val hours = elapsedSeconds / 3600
+                                val minutes = (elapsedSeconds % 3600) / 60
+                                val seconds = elapsedSeconds % 60
+                                if (hours > 0) String.format(java.util.Locale.US, "Connected • %02d:%02d:%02d", hours, minutes, seconds)
+                                else String.format(java.util.Locale.US, "Connected • %02d:%02d", minutes, seconds)
+                            }
+                            isConnecting -> "Connecting..."
+                            else -> "Secure Tunnel Manager"
+                        }
+                        val statusSubColor = when {
+                            isRunning -> HamedThemeColors.SuccessGreen
+                            isConnecting -> HamedThemeColors.WarningOrange
+                            else -> HamedThemeColors.TextSecondary
+                        }
                         Text(
-                            text = "Secure Tunnel Manager",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = HamedThemeColors.TextSecondary
+                            text = statusSubText,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isRunning) FontWeight.Bold else FontWeight.Normal),
+                            color = statusSubColor
                         )
                     }
 
@@ -307,102 +329,18 @@ fun HamedAetherScreen(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ==========================================
-            // HERO: Hamed Aether Shield Status Emblem (Single Connect button is at bottom)
-            // ==========================================
-            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-            val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = if (isRunning) 1.05f else 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1400, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulseScale"
-            )
-
-            val isConnecting = status is MainStatus.Connecting || preparationStatus != null
-            val outerGlowBrush = when {
-                isRunning -> Brush.sweepGradient(listOf(HamedThemeColors.SuccessGreen, HamedThemeColors.AccentCyan, HamedThemeColors.SuccessGreen))
-                isConnecting -> Brush.sweepGradient(listOf(HamedThemeColors.WarningOrange, HamedThemeColors.AccentCyan, HamedThemeColors.WarningOrange))
-                else -> Brush.sweepGradient(listOf(HamedThemeColors.PrimaryBlue, HamedThemeColors.SecondaryPurple, HamedThemeColors.AccentCyan, HamedThemeColors.PrimaryBlue))
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Shield Status Emblem (Visual status indicator only - no duplicate button)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .scale(pulseScale)
-                        .size(116.dp)
-                        .clip(CircleShape)
-                        .background(outerGlowBrush)
-                        .padding(3.5.dp)
-                        .clip(CircleShape)
-                        .background(HamedThemeColors.InnerCard)
-                        .border(1.5.dp, HamedThemeColors.Border, CircleShape)
-                ) {
-                    if (isConnecting) {
-                        CircularProgressIndicator(
-                            color = HamedThemeColors.AccentCyan,
-                            modifier = Modifier.size(50.dp),
-                            strokeWidth = 3.5.dp
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(R.drawable.ic_hamed_logo),
-                            contentDescription = "Hamed Aether Status",
-                            modifier = Modifier.size(56.dp)
-                        )
-                    }
-                }
-
-                // Status Texts
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = when {
-                            preparationStatus != null -> preparationStatus!!
-                            isRunning -> "Connected"
-                            status is MainStatus.Connecting -> status.message.ifBlank { "Connecting..." }
-                            else -> "Not Connected"
-                        },
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        ),
-                        color = if (isRunning) HamedThemeColors.SuccessGreen else HamedThemeColors.TextPrimary
-                    )
-
-                    if (isRunning) {
-                        val hours = elapsedSeconds / 3600
-                        val minutes = (elapsedSeconds % 3600) / 60
-                        val seconds = elapsedSeconds % 60
-                        val timeStr = if (hours > 0) {
-                            String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
-                        } else {
-                            String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
-                        }
-                        Text(
-                            text = "Connected • $timeStr",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                            color = HamedThemeColors.AccentCyan,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "Tap Connect below to start",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = HamedThemeColors.TextSecondary,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
+            if (buttonPosition == "top") {
+                HamedConnectSection(
+                    isRunning = isRunning,
+                    isConnecting = isConnecting,
+                    preparationStatus = preparationStatus,
+                    elapsedSeconds = elapsedSeconds,
+                    activeProtocol = activeProtocol,
+                    activeChain = activeChain,
+                    activePsiphonRegion = activePsiphonRegion,
+                    activeObfs = activeObfs,
+                    onToggle = { onAction(MainAction.ToggleService) }
+                )
             }
 
             // ==========================================
@@ -560,6 +498,20 @@ fun HamedAetherScreen(
                         }
                     }
                 }
+            }
+
+            if (buttonPosition == "middle") {
+                HamedConnectSection(
+                    isRunning = isRunning,
+                    isConnecting = isConnecting,
+                    preparationStatus = preparationStatus,
+                    elapsedSeconds = elapsedSeconds,
+                    activeProtocol = activeProtocol,
+                    activeChain = activeChain,
+                    activePsiphonRegion = activePsiphonRegion,
+                    activeObfs = activeObfs,
+                    onToggle = { onAction(MainAction.ToggleService) }
+                )
             }
 
             // ==========================================
@@ -831,108 +783,146 @@ fun HamedAetherScreen(
                 }
             }
 
-            // ==========================================
-            // TILE 3: Bottom Full-Width Connect Pill & Breadcrumbs
-            // ==========================================
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Large Pill Button (Electric Blue to Neon Purple gradient)
-                val buttonGradient = when {
-                    isRunning -> Brush.horizontalGradient(listOf(HamedThemeColors.SuccessGreen, Color(0xFF00B0FF)))
-                    isConnecting -> Brush.horizontalGradient(listOf(HamedThemeColors.WarningOrange, Color(0xFFFFAB00)))
-                    else -> Brush.horizontalGradient(listOf(HamedThemeColors.PrimaryBlue, HamedThemeColors.SecondaryPurple))
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp)
-                        .clip(RoundedCornerShape(30.dp))
-                        .shadow(12.dp, RoundedCornerShape(30.dp))
-                        .clickable {
-                            if (!isConnecting) {
-                                onAction(MainAction.ToggleService)
-                            }
-                        },
-                    shape = RoundedCornerShape(30.dp),
-                    color = Color.Transparent
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(buttonGradient),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            if (isConnecting) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.5.dp
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_power_24dp),
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Text(
-                                text = when {
-                                    preparationStatus != null -> preparationStatus!!
-                                    isRunning -> "Disconnect"
-                                    isConnecting -> "Connecting..."
-                                    else -> "Connect"
-                                },
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                // Breadcrumbs: WireGuard > Psiphon (US) > Auto
-                Row(
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    BreadcrumbChip(
-                        iconRes = R.drawable.ic_shield_24dp,
-                        label = activeProtocol.name
-                    )
-                    Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
-                    val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
-                        "Psiphon (${activePsiphonRegion.uppercase()})"
-                    } else {
-                        activeChain.displayName
-                    }
-                    BreadcrumbChip(
-                        iconRes = R.drawable.ic_routing_24dp,
-                        label = chainLabel
-                    )
-                    Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
-                    BreadcrumbChip(
-                        iconRes = R.drawable.ic_flash_on_24dp,
-                        label = activeObfs.name
-                    )
-                }
+            if (buttonPosition == "bottom") {
+                HamedConnectSection(
+                    isRunning = isRunning,
+                    isConnecting = isConnecting,
+                    preparationStatus = preparationStatus,
+                    elapsedSeconds = elapsedSeconds,
+                    activeProtocol = activeProtocol,
+                    activeChain = activeChain,
+                    activePsiphonRegion = activePsiphonRegion,
+                    activeObfs = activeObfs,
+                    onToggle = { onAction(MainAction.ToggleService) }
+                )
             }
 
             Spacer(modifier = Modifier.height(navBarPadding + 8.dp))
+        }
+    }
+}
+
+@Composable
+fun HamedConnectSection(
+    isRunning: Boolean,
+    isConnecting: Boolean,
+    preparationStatus: String?,
+    elapsedSeconds: Long,
+    activeProtocol: HamedProtocolType,
+    activeChain: HamedChainType,
+    activePsiphonRegion: String,
+    activeObfs: HamedObfsType,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Large Pill Button (Electric Blue to Neon Purple gradient)
+        val buttonGradient = when {
+            isRunning -> Brush.horizontalGradient(listOf(HamedThemeColors.SuccessGreen, Color(0xFF00B0FF)))
+            isConnecting -> Brush.horizontalGradient(listOf(HamedThemeColors.WarningOrange, Color(0xFFFFAB00)))
+            else -> Brush.horizontalGradient(listOf(HamedThemeColors.PrimaryBlue, HamedThemeColors.SecondaryPurple))
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .clip(RoundedCornerShape(30.dp))
+                .shadow(12.dp, RoundedCornerShape(30.dp))
+                .clickable {
+                    if (!isConnecting) {
+                        onToggle()
+                    }
+                },
+            shape = RoundedCornerShape(30.dp),
+            color = Color.Transparent
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(buttonGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (isConnecting) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_power_24dp),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    val buttonText = when {
+                        preparationStatus != null -> preparationStatus
+                        isRunning -> {
+                            val hours = elapsedSeconds / 3600
+                            val minutes = (elapsedSeconds % 3600) / 60
+                            val seconds = elapsedSeconds % 60
+                            val timeStr = if (hours > 0) {
+                                String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
+                            } else {
+                                String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
+                            }
+                            "Disconnect ($timeStr)"
+                        }
+                        isConnecting -> "Connecting..."
+                        else -> "Connect"
+                    }
+
+                    Text(
+                        text = buttonText,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        // Breadcrumbs: WireGuard > Psiphon (US) > Auto
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_shield_24dp,
+                label = activeProtocol.name
+            )
+            Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
+            val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
+                "Psiphon (${activePsiphonRegion.uppercase()})"
+            } else {
+                activeChain.displayName
+            }
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_routing_24dp,
+                label = chainLabel
+            )
+            Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_flash_on_24dp,
+                label = activeObfs.name
+            )
         }
     }
 }

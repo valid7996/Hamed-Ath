@@ -86,6 +86,7 @@ object AppConfig {
 
     /** Hamed Aether: Global defaults and active overrides for Masque and WireGuard */
     const val PREF_AETHER_TRANSPORT = "pref_aether_transport"
+    const val PREF_HAMED_BUTTON_POSITION = "pref_hamed_button_position"
     const val PREF_AETHER_MASQUE_SCAN_MODE = "pref_aether_masque_scan_mode"
     const val PREF_AETHER_WG_SCAN_MODE = "pref_aether_wg_scan_mode"
     const val PREF_AETHER_MASQUE_SNI_OVERRIDE = "pref_aether_masque_sni_override"

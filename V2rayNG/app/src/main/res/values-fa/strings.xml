@@ -64,6 +64,17 @@
     <string name="hamed_wg_renew_keys_summary">دریافت حساب و کلید اختصاصی WireGuard از کلودفلر</string>
 
     <string name="hamed_section_general">تنظیمات عمومی و کاربری</string>
+    <string name="hamed_button_position_title">موقعیت دکمه اتصال</string>
+    <string-array name="hamed_button_position_entries">
+        <item>وسط (بین بخش‌ها)</item>
+        <item>بالا (بالای بخش‌ها)</item>
+        <item>پایین (پایین صفحه)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
     <string name="hamed_general_speed">نمایش سرعت زنده در نوار اعلان</string>
     <string name="hamed_general_speed_summary">نمایش سرعت دانلود، آپلود و حجم ترافیک (پیش‌فرض فعال)</string>
     <!-- Notifications -->

@@ -64,6 +64,17 @@
     <string name="hamed_wg_renew_keys_summary">Renew Cloudflare identity and keys for WireGuard tunnel</string>
 
     <string name="hamed_section_general">General &amp; UI Settings</string>
+    <string name="hamed_button_position_title">Connect Button Position</string>
+    <string-array name="hamed_button_position_entries">
+        <item>Middle (Between Cards)</item>
+        <item>Top (Above Cards)</item>
+        <item>Bottom (Under Cards)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
     <string name="hamed_general_speed">Show Real-Time Speed Notification</string>
     <string name="hamed_general_speed_summary">Display real-time download and upload speeds in status bar (Default: On)</string>
     <string name="hamed_psiphon_country_title">Psiphon Exit Country</string>
