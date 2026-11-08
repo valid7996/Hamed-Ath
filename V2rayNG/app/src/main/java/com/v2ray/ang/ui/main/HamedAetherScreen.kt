@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -42,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -67,11 +70,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -201,20 +206,32 @@ fun HamedAetherScreen(
         bottomBar = {
             Surface(
                 color = HamedThemeColors.Background,
+                shadowElevation = 16.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = navBarPadding + 4.dp, top = 2.dp),
+                        .navigationBarsPadding(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    HamedBreadcrumbBar(
-                        activeProtocol = activeProtocol,
-                        activeChain = activeChain,
-                        activePsiphonRegion = activePsiphonRegion,
-                        activeObfs = activeObfs
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = HamedThemeColors.Border.copy(alpha = 0.5f)
                     )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        HamedBreadcrumbBar(
+                            activeProtocol = activeProtocol,
+                            activeChain = activeChain,
+                            activePsiphonRegion = activePsiphonRegion,
+                            activeObfs = activeObfs
+                        )
+                    }
                 }
             }
         },
@@ -936,51 +953,53 @@ fun HamedBreadcrumbBar(
     activeObfs: AetherObfuscation,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        val protoLabel = when (activeProtocol) {
-            AetherProtocol.WIREGUARD -> "WIREGUARD"
-            AetherProtocol.MASQUE -> "MASQUE"
-            AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
-            AetherProtocol.MIM -> "MIM"
-            AetherProtocol.GOOL -> "WARP"
-        }
-        val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
-            "Psiphon (${activePsiphonRegion.uppercase()})"
-        } else {
-            activeChain.displayName
-        }
-        val obfsLabel = activeObfs.name.uppercase()
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            val protoLabel = when (activeProtocol) {
+                AetherProtocol.WIREGUARD -> "WIREGUARD"
+                AetherProtocol.MASQUE -> "MASQUE"
+                AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
+                AetherProtocol.MIM -> "MIM"
+                AetherProtocol.GOOL -> "WARP"
+            }
+            val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
+                "Psiphon (${activePsiphonRegion.uppercase()})"
+            } else {
+                activeChain.displayName
+            }
+            val obfsLabel = activeObfs.name.uppercase()
 
-        BreadcrumbChip(
-            iconRes = R.drawable.ic_flash_on_24dp,
-            label = obfsLabel
-        )
-        Text(
-            text = "<",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = HamedThemeColors.TextSecondary,
-            modifier = Modifier.padding(horizontal = 6.dp)
-        )
-        BreadcrumbChip(
-            iconRes = R.drawable.ic_routing_24dp,
-            label = chainLabel
-        )
-        Text(
-            text = "<",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = HamedThemeColors.TextSecondary,
-            modifier = Modifier.padding(horizontal = 6.dp)
-        )
-        BreadcrumbChip(
-            iconRes = R.drawable.ic_shield_24dp,
-            label = protoLabel
-        )
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_shield_24dp,
+                label = protoLabel
+            )
+            Text(
+                text = ">",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = HamedThemeColors.TextSecondary,
+                modifier = Modifier.padding(horizontal = 6.dp)
+            )
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_routing_24dp,
+                label = chainLabel
+            )
+            Text(
+                text = ">",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = HamedThemeColors.TextSecondary,
+                modifier = Modifier.padding(horizontal = 6.dp)
+            )
+            BreadcrumbChip(
+                iconRes = R.drawable.ic_flash_on_24dp,
+                label = obfsLabel
+            )
+        }
     }
 }
 
@@ -996,16 +1015,16 @@ fun BreadcrumbChip(iconRes: Int, label: String) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
-                color = HamedThemeColors.TextPrimary
-            )
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
                 tint = HamedThemeColors.AccentCyan,
                 modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
+                color = HamedThemeColors.TextPrimary
             )
         }
     }
