@@ -250,14 +250,6 @@ jobs:
         done
         exit $status
 
-    - name: Upload APK Artifacts
-      uses: actions/upload-artifact@v4
-      if: ${{ success() }}
-      with:
-        name: HamedAether-APKs
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
-        if-no-files-found: error
-
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
