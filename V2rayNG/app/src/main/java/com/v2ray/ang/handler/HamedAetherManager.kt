@@ -289,10 +289,11 @@ object HamedAetherManager {
 
                 // Detect mismatch between configured IP family and existing cached endpoint
                 val ipVersion = AetherIpVersion.fromString(profile.aetherIpVersion)
-                val serverIsIpv6 = profile.server.contains(":")
-                val serverIsIpv4 = profile.server.contains(".") && !serverIsIpv6
-                val ipMismatch = (ipVersion == AetherIpVersion.V6 && !serverIsIpv6 && profile.server.isNotBlank()) ||
-                                 (ipVersion == AetherIpVersion.V4 && !serverIsIpv4 && profile.server.isNotBlank())
+                val currentServer = profile.server.orEmpty()
+                val serverIsIpv6 = currentServer.contains(":")
+                val serverIsIpv4 = currentServer.contains(".") && !serverIsIpv6
+                val ipMismatch = (ipVersion == AetherIpVersion.V6 && !serverIsIpv6 && currentServer.isNotBlank()) ||
+                                 (ipVersion == AetherIpVersion.V4 && !serverIsIpv4 && currentServer.isNotBlank())
                 if (ipMismatch) {
                     profile.server = ""
                     profile.aetherWiwOuter = null
