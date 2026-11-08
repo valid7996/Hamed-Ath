@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -50,7 +49,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -69,13 +67,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -211,7 +207,7 @@ fun HamedAetherScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding(),
+                        .padding(bottom = navBarPadding + 6.dp, top = 0.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
@@ -954,53 +950,51 @@ fun HamedBreadcrumbBar(
     activeObfs: AetherObfuscation,
     modifier: Modifier = Modifier
 ) {
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            val protoLabel = when (activeProtocol) {
-                AetherProtocol.WIREGUARD -> "WIREGUARD"
-                AetherProtocol.MASQUE -> "MASQUE"
-                AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
-                AetherProtocol.MIM -> "MIM"
-                AetherProtocol.GOOL -> "WARP"
-            }
-            val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
-                "Psiphon (${activePsiphonRegion.uppercase()})"
-            } else {
-                activeChain.displayName
-            }
-            val obfsLabel = activeObfs.name.uppercase()
-
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_shield_24dp,
-                label = protoLabel
-            )
-            Text(
-                text = ">",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = HamedThemeColors.TextSecondary,
-                modifier = Modifier.padding(horizontal = 6.dp)
-            )
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_routing_24dp,
-                label = chainLabel
-            )
-            Text(
-                text = ">",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = HamedThemeColors.TextSecondary,
-                modifier = Modifier.padding(horizontal = 6.dp)
-            )
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_flash_on_24dp,
-                label = obfsLabel
-            )
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        val protoLabel = when (activeProtocol) {
+            AetherProtocol.WIREGUARD -> "WIREGUARD"
+            AetherProtocol.MASQUE -> "MASQUE"
+            AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
+            AetherProtocol.MIM -> "MIM"
+            AetherProtocol.GOOL -> "WARP"
         }
+        val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
+            "Psiphon (${activePsiphonRegion.uppercase()})"
+        } else {
+            activeChain.displayName
+        }
+        val obfsLabel = activeObfs.name.uppercase()
+
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_shield_24dp,
+            label = protoLabel
+        )
+        Text(
+            text = ">",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = HamedThemeColors.TextSecondary,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        )
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_routing_24dp,
+            label = chainLabel
+        )
+        Text(
+            text = ">",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = HamedThemeColors.TextSecondary,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        )
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_flash_on_24dp,
+            label = obfsLabel
+        )
     }
 }
 

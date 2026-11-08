@@ -203,7 +203,14 @@ jobs:
         cd ${{ github.workspace }}/V2rayNG
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
-        ./gradlew assembleRelease -PpattngVersion="${{ inputs.release_tag }}" -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ steps.android_keystore.outputs.storePassword }} -Pandroid.injected.signing.key.alias=${{ steps.android_keystore.outputs.keyAlias }} -Pandroid.injected.signing.key.password=${{ steps.android_keystore.outputs.keyPassword }}
+        ./gradlew assembleRelease -PpattngVersion="${{ inputs.release_tag }}" -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ steps.android_keystore.outputs.storePassword }} -Pandroid.injected.signing.key.alias=${{ steps.android_keystore.outputs.keyAlias }} -Pandroid.injected.signing.key.password=${{ steps.android_keystore.outputs.keyPassword }} 2>&1 | tee gradle_build.log || {
+          status=$?
+          echo "### Gradle Build Failed" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "e: |FAILED|ERROR" gradle_build.log | tail -n 40 >> $GITHUB_STEP_SUMMARY || tail -n 40 gradle_build.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $status
+        }
     
     - name: Check the native libraries in the APKs
       run: |
