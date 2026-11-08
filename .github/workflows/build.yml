@@ -230,6 +230,7 @@ jobs:
       with:
         name: HamedAether-arm64-v8a
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*arm64-v8a*.apk
+        retention-days: 7
 
     - name: Upload armeabi-v7a APK
       uses: actions/upload-artifact@v4
@@ -237,13 +238,7 @@ jobs:
       with:
         name: HamedAether-armeabi-v7a
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*armeabi-v7a*.apk
-
-    - name: Upload x86 APK
-      uses: actions/upload-artifact@v4
-      if: ${{ success() }}
-      with:
-        name: HamedAether-x86-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*x86*.apk
+        retention-days: 7
 
     - name: Upload universal APK
       uses: actions/upload-artifact@v4
@@ -251,13 +246,26 @@ jobs:
       with:
         name: HamedAether-universal-apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*universal*.apk
+        retention-days: 7
 
-    - name: Upload all Release APKs
-      uses: actions/upload-artifact@v4
+    - name: Publish GitHub Release
+      uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        name: HamedAether-Release-APKs
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+        tag_name: latest-release
+        name: Hamed Aether Official Release
+        body: |
+          Official Production Release of **Hamed Aether** (Non-Debug, Keystore Signed)
+          - Single bottom connect button
+          - Smart fast IP & Country Flag detection (with Carrier + Exit node flags for Psiphon)
+          - Psiphon Country selector on main screen
+          - Cleaned Settings (Pure Masque, WireGuard, and General settings)
+          - Animated live oscilloscope waveforms
+        files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+        prerelease: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   sign-and-release:
     needs: build
