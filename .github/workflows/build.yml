@@ -231,19 +231,26 @@ jobs:
         done
         exit $status
 
+    - name: Upload APK Artifacts
+      uses: actions/upload-artifact@v4
+      if: ${{ success() }}
+      with:
+        name: HamedAether-APKs
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.0
-        name: Hamed Aether v1.0.0 (Official Signed Release)
+        tag_name: v1.0.1
+        name: Hamed Aether v1.0.1 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether** (Non-Debug, Keystore Signed)
-          - Single bottom connect button
-          - Smart fast IP & Country Flag detection (with Carrier + Exit node flags for Psiphon)
-          - Psiphon Country selector on main screen
-          - Cleaned Settings (Pure Masque, WireGuard, and General settings)
-          - Animated live oscilloscope waveforms
+          Official Production Release of **Hamed Aether v1.0.1** (Non-Debug, Keystore Signed)
+          - Pinned bottom bar: Breadcrumb flow [ 🛡 PROTOCOL ] > [ ☊ CHAIN ] > [ ⚡ OBFUSCATION ] permanently fixed at bottom
+          - Single bottom/middle connect button (customizable in settings)
+          - Real-time oscilloscope traffic waveforms
+          - Fast IP & Country flag detection (with Cloudflare + Psiphon exit nodes)
+          - Streamlined Settings (pure Aether Masque & WireGuard options)
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         prerelease: false
         make_latest: true
