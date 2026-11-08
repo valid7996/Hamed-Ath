@@ -43,7 +43,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -215,9 +214,11 @@ fun HamedAetherScreen(
                         .navigationBarsPadding(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    HorizontalDivider(
-                        thickness = 0.5.dp,
-                        color = HamedThemeColors.Border.copy(alpha = 0.5f)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.6.dp)
+                            .background(HamedThemeColors.Border.copy(alpha = 0.5f))
                     )
                     Box(
                         modifier = Modifier
@@ -981,7 +982,7 @@ fun HamedBreadcrumbBar(
             )
             Text(
                 text = ">",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = HamedThemeColors.TextSecondary,
                 modifier = Modifier.padding(horizontal = 6.dp)
             )
@@ -991,7 +992,7 @@ fun HamedBreadcrumbBar(
             )
             Text(
                 text = ">",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = HamedThemeColors.TextSecondary,
                 modifier = Modifier.padding(horizontal = 6.dp)
             )
