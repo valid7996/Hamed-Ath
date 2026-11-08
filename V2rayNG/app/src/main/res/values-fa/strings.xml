@@ -86,7 +86,7 @@
     <string name="hamed_general_speed">نمایش سرعت زنده در نوار اعلان</string>
     <string name="hamed_general_speed_summary">نمایش سرعت دانلود، آپلود و حجم ترافیک (پیش‌فرض فعال)</string>
     <!-- Notifications -->
-    <string name="notification_channel_service">سرویس PattNG</string>
+    <string name="notification_channel_service">سرویس حامد اتر</string>
     <string name="notification_channel_subscription_updates">به‌روزرسانی اشتراک‌ها</string>
     <string name="notification_channel_connection_checks">بررسی اتصال</string>
     <string name="notification_action_stop_v2ray">توقف</string>

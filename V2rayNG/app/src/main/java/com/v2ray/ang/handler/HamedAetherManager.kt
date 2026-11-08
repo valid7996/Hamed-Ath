@@ -20,8 +20,10 @@ import com.v2ray.ang.enums.AetherTransport
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.ui.server.AetherKeysRepository
 import com.v2ray.ang.util.LogUtil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,9 +75,16 @@ object HamedAetherManager {
 
     private var accumulatedUpBytes = 0L
     private var accumulatedDownBytes = 0L
+    private var prepareJob: Job? = null
 
     fun setPreparationStatus(status: String?) {
         _preparationStatus.value = status
+    }
+
+    fun cancelPreparation() {
+        prepareJob?.cancel()
+        prepareJob = null
+        _preparationStatus.value = null
     }
 
     /**
@@ -223,6 +232,10 @@ object HamedAetherManager {
     fun updateIpVersion(ipVersion: AetherIpVersion): ProfileItem {
         val (guid, profile) = getActiveAetherProfile()
         profile.aetherIpVersion = ipVersion.type
+        // Clear cached endpoints so the next connection will scan and find IPs of the selected family
+        profile.server = ""
+        profile.aetherWiwOuter = null
+        profile.aetherWiwInner = null
         MmkvManager.encodeServerConfig(guid, profile)
         return profile
     }
@@ -268,10 +281,24 @@ object HamedAetherManager {
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
-        scope.launch {
+        prepareJob?.cancel()
+        prepareJob = scope.launch {
             try {
                 val (guid, profile) = getActiveAetherProfile()
                 applySettingsToProfile(profile)
+
+                // Detect mismatch between configured IP family and existing cached endpoint
+                val ipVersion = AetherIpVersion.fromString(profile.aetherIpVersion)
+                val serverIsIpv6 = profile.server.contains(":")
+                val serverIsIpv4 = profile.server.contains(".") && !serverIsIpv6
+                val ipMismatch = (ipVersion == AetherIpVersion.V6 && !serverIsIpv6 && profile.server.isNotBlank()) ||
+                                 (ipVersion == AetherIpVersion.V4 && !serverIsIpv4 && profile.server.isNotBlank())
+                if (ipMismatch) {
+                    profile.server = ""
+                    profile.aetherWiwOuter = null
+                    profile.aetherWiwInner = null
+                }
+
                 MmkvManager.encodeServerConfig(guid, profile)
                 val protocol = AetherProtocol.fromString(profile.aetherProtocol)
 
@@ -346,11 +373,19 @@ object HamedAetherManager {
                     onStatusChange("در حال اتصال...")
                     onSuccess(guid)
                 }
+            } catch (ce: CancellationException) {
+                LogUtil.d(TAG, "prepareAndConnect cancelled by user")
+                withContext(Dispatchers.Main) {
+                    _preparationStatus.value = null
+                }
             } catch (e: Exception) {
                 LogUtil.e(TAG, "prepareAndConnect error", e)
                 withContext(Dispatchers.Main) {
+                    _preparationStatus.value = null
                     onError(e.message ?: "خطا در برقراری ارتباط")
                 }
+            } finally {
+                prepareJob = null
             }
         }
     }

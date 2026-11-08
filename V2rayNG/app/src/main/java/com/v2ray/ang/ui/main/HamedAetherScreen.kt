@@ -113,9 +113,12 @@ fun HamedAetherScreen(
         }
     }
 
-    // Auto fast IP detection and ping test on connect, reset on disconnect
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
+    val isConnecting = status is MainStatus.Connecting || preparationStatus != null
+    val isActuallyConnected = isRunning && !isConnecting
+
+    // Auto fast IP detection and ping test on real connection, reset on disconnect
+    LaunchedEffect(isActuallyConnected) {
+        if (isActuallyConnected) {
             HamedAetherManager.fetchFastPublicIp()
             var retries = 0
             while (retries < 6 && HamedAetherManager.connectionInfo.value.ip == "---") {
@@ -138,12 +141,12 @@ fun HamedAetherScreen(
         }
     }
 
-    // Connection timer
+    // Connection timer (only counts when actually connected, not warming up)
     var connectionStartTime by rememberSaveable { mutableLongStateOf(0L) }
     var elapsedSeconds by rememberSaveable { mutableLongStateOf(0L) }
 
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
+    LaunchedEffect(isActuallyConnected) {
+        if (isActuallyConnected) {
             if (connectionStartTime == 0L) {
                 connectionStartTime = SystemClock.elapsedRealtime()
             }
@@ -187,7 +190,6 @@ fun HamedAetherScreen(
     }
 
     val buttonPosition by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
-    val isConnecting = status is MainStatus.Connecting || preparationStatus != null
 
     val scrollState = rememberScrollState()
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -274,24 +276,26 @@ fun HamedAetherScreen(
                         }
                         val statusSubText = when {
                             preparationStatus != null -> preparationStatus!!
-                            isRunning -> {
+                            isConnecting -> {
+                                if (status is MainStatus.Connecting && status.message.isNotBlank()) status.message else "Connecting..."
+                            }
+                            isActuallyConnected -> {
                                 val hours = elapsedSeconds / 3600
                                 val minutes = (elapsedSeconds % 3600) / 60
                                 val seconds = elapsedSeconds % 60
                                 if (hours > 0) String.format(java.util.Locale.US, "Connected • %02d:%02d:%02d", hours, minutes, seconds)
                                 else String.format(java.util.Locale.US, "Connected • %02d:%02d", minutes, seconds)
                             }
-                            isConnecting -> "Connecting..."
                             else -> "Secure Tunnel Manager"
                         }
                         val statusSubColor = when {
-                            isRunning -> HamedThemeColors.SuccessGreen
                             isConnecting -> HamedThemeColors.WarningOrange
+                            isActuallyConnected -> HamedThemeColors.SuccessGreen
                             else -> HamedThemeColors.TextSecondary
                         }
                         Text(
                             text = statusSubText,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isRunning) FontWeight.Bold else FontWeight.Normal),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isActuallyConnected) FontWeight.Bold else FontWeight.Normal),
                             color = statusSubColor
                         )
                     }
@@ -839,6 +843,8 @@ fun HamedConnectSection(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isActuallyConnected = isRunning && !isConnecting
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -848,8 +854,8 @@ fun HamedConnectSection(
     ) {
         // Large Pill Button (Electric Blue to Neon Purple gradient)
         val buttonGradient = when {
-            isRunning -> Brush.horizontalGradient(listOf(HamedThemeColors.SuccessGreen, Color(0xFF00B0FF)))
             isConnecting -> Brush.horizontalGradient(listOf(HamedThemeColors.WarningOrange, Color(0xFFFFAB00)))
+            isActuallyConnected -> Brush.horizontalGradient(listOf(HamedThemeColors.SuccessGreen, Color(0xFF00B0FF)))
             else -> Brush.horizontalGradient(listOf(HamedThemeColors.PrimaryBlue, HamedThemeColors.SecondaryPurple))
         }
 
@@ -860,9 +866,7 @@ fun HamedConnectSection(
                 .clip(RoundedCornerShape(30.dp))
                 .shadow(12.dp, RoundedCornerShape(30.dp))
                 .clickable {
-                    if (!isConnecting) {
-                        onToggle()
-                    }
+                    onToggle()
                 },
             shape = RoundedCornerShape(30.dp),
             color = Color.Transparent
@@ -894,7 +898,8 @@ fun HamedConnectSection(
 
                     val buttonText = when {
                         preparationStatus != null -> preparationStatus
-                        isRunning -> {
+                        isConnecting -> "Connecting..."
+                        isActuallyConnected -> {
                             val hours = elapsedSeconds / 3600
                             val minutes = (elapsedSeconds % 3600) / 60
                             val seconds = elapsedSeconds % 60
@@ -905,7 +910,6 @@ fun HamedConnectSection(
                             }
                             "Disconnect ($timeStr)"
                         }
-                        isConnecting -> "Connecting..."
                         else -> "Connect"
                     }
 

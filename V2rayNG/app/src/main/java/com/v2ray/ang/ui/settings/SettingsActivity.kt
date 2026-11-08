@@ -317,12 +317,6 @@ fun SettingsScreen(
                     subtitle = stringResource(R.string.hamed_aether_title),
                     onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
                 )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_source_code_24dp),
-                    title = stringResource(R.string.title_source_code),
-                    subtitle = AppConfig.APP_URL,
-                    onClick = { Utils.openUri(context, AppConfig.APP_URL) }
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

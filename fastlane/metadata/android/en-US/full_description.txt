@@ -1,8 +1,8 @@
-<p>A V2Ray client for Android (PattNG, a v2rayNG fork), support <a href="https://github.com/XTLS/Xray-core">Xray core</a> and <a href="https://github.com/v2fly/v2ray-core">v2fly core</a></p>
+<p>A V2Ray client for Android (Hamed Aether, a v2rayNG fork), support <a href="https://github.com/XTLS/Xray-core">Xray core</a> and <a href="https://github.com/v2fly/v2ray-core">v2fly core</a></p>
 
 <h3>Telegram Channel</h3>
 
-<p><a href="https://t.me/github_2dust">github_2dust</a></p>
+<p><a href="https://t.me/hamedvpns">Hamed VPNs</a></p>
 
 <h3>Usage</h3>
 
