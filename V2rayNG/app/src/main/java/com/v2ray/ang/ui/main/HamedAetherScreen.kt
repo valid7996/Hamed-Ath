@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.enums.AetherIpVersion
 import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.enums.AetherPsiphon
@@ -180,6 +181,10 @@ fun HamedAetherScreen(
         val (_, prof) = HamedAetherManager.getActiveAetherProfile()
         mutableStateOf(AetherObfuscation.fromString(prof.aetherObfuscation))
     }
+    var activeIpVersion by remember {
+        val (_, prof) = HamedAetherManager.getActiveAetherProfile()
+        mutableStateOf(AetherIpVersion.fromString(prof.aetherIpVersion))
+    }
 
     val buttonPosition by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
     val isConnecting = status is MainStatus.Connecting || preparationStatus != null
@@ -191,6 +196,26 @@ fun HamedAetherScreen(
     Scaffold(
         containerColor = HamedThemeColors.Background,
         contentWindowInsets = WindowInsets(0),
+        bottomBar = {
+            Surface(
+                color = HamedThemeColors.Background,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = navBarPadding + 4.dp, top = 2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    HamedBreadcrumbBar(
+                        activeProtocol = activeProtocol,
+                        activeChain = activeChain,
+                        activePsiphonRegion = activePsiphonRegion,
+                        activeObfs = activeObfs
+                    )
+                }
+            }
+        },
         topBar = {
             Surface(
                 color = HamedThemeColors.CardBackground,
@@ -340,10 +365,6 @@ fun HamedAetherScreen(
                     isConnecting = isConnecting,
                     preparationStatus = preparationStatus,
                     elapsedSeconds = elapsedSeconds,
-                    activeProtocol = activeProtocol,
-                    activeChain = activeChain,
-                    activePsiphonRegion = activePsiphonRegion,
-                    activeObfs = activeObfs,
                     onToggle = { onAction(MainAction.ToggleService) }
                 )
             }
@@ -502,6 +523,16 @@ fun HamedAetherScreen(
                             }
                         }
                     }
+
+                    // 4. Scan IP Version Selector (IPv4, IPv6, Dual)
+                    HamedIpVersionSelector(
+                        selectedIpVersion = activeIpVersion,
+                        onSelect = { selected ->
+                            activeIpVersion = selected
+                            HamedAetherManager.updateIpVersion(selected)
+                            if (isRunning) onAction(MainAction.RestartService)
+                        }
+                    )
                 }
             }
 
@@ -511,10 +542,6 @@ fun HamedAetherScreen(
                     isConnecting = isConnecting,
                     preparationStatus = preparationStatus,
                     elapsedSeconds = elapsedSeconds,
-                    activeProtocol = activeProtocol,
-                    activeChain = activeChain,
-                    activePsiphonRegion = activePsiphonRegion,
-                    activeObfs = activeObfs,
                     onToggle = { onAction(MainAction.ToggleService) }
                 )
             }
@@ -794,15 +821,11 @@ fun HamedAetherScreen(
                     isConnecting = isConnecting,
                     preparationStatus = preparationStatus,
                     elapsedSeconds = elapsedSeconds,
-                    activeProtocol = activeProtocol,
-                    activeChain = activeChain,
-                    activePsiphonRegion = activePsiphonRegion,
-                    activeObfs = activeObfs,
                     onToggle = { onAction(MainAction.ToggleService) }
                 )
             }
 
-            Spacer(modifier = Modifier.height(navBarPadding + 8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -813,10 +836,6 @@ fun HamedConnectSection(
     isConnecting: Boolean,
     preparationStatus: String?,
     elapsedSeconds: Long,
-    activeProtocol: AetherProtocol,
-    activeChain: HamedChainType,
-    activePsiphonRegion: String,
-    activeObfs: AetherObfuscation,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -902,59 +921,196 @@ fun HamedConnectSection(
                 }
             }
         }
+    }
+}
 
-        // Breadcrumbs: WireGuard > Psiphon (US) > Auto
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_shield_24dp,
-                label = activeProtocol.name
-            )
-            Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
-            val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
-                "Psiphon (${activePsiphonRegion.uppercase()})"
-            } else {
-                activeChain.displayName
-            }
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_routing_24dp,
-                label = chainLabel
-            )
-            Text(text = ">", style = MaterialTheme.typography.labelSmall, color = HamedThemeColors.TextSecondary)
-            BreadcrumbChip(
-                iconRes = R.drawable.ic_flash_on_24dp,
-                label = activeObfs.name
-            )
+@Composable
+fun HamedBreadcrumbBar(
+    activeProtocol: AetherProtocol,
+    activeChain: HamedChainType,
+    activePsiphonRegion: String,
+    activeObfs: AetherObfuscation,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        val protoLabel = when (activeProtocol) {
+            AetherProtocol.WIREGUARD -> "WIREGUARD"
+            AetherProtocol.MASQUE -> "MASQUE"
+            AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
+            AetherProtocol.MIM -> "MIM"
+            AetherProtocol.GOOL -> "WARP"
         }
+        val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
+            "Psiphon (${activePsiphonRegion.uppercase()})"
+        } else {
+            activeChain.displayName
+        }
+        val obfsLabel = activeObfs.name.uppercase()
+
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_flash_on_24dp,
+            label = obfsLabel
+        )
+        Text(
+            text = "<",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = HamedThemeColors.TextSecondary,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        )
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_routing_24dp,
+            label = chainLabel
+        )
+        Text(
+            text = "<",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = HamedThemeColors.TextSecondary,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        )
+        BreadcrumbChip(
+            iconRes = R.drawable.ic_shield_24dp,
+            label = protoLabel
+        )
     }
 }
 
 @Composable
 fun BreadcrumbChip(iconRes: Int, label: String) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         color = HamedThemeColors.CardBackground,
         border = BorderStroke(1.dp, HamedThemeColors.Border)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
+                color = HamedThemeColors.TextPrimary
+            )
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
                 tint = HamedThemeColors.AccentCyan,
                 modifier = Modifier.size(13.dp)
             )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                color = HamedThemeColors.TextSecondary
-            )
+        }
+    }
+}
+
+@Composable
+fun HamedIpVersionSelector(
+    selectedIpVersion: AetherIpVersion,
+    onSelect: (AetherIpVersion) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = HamedThemeColors.InnerCard,
+        border = BorderStroke(1.dp, HamedThemeColors.Border)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.size(36.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF1E1938)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_globe_24dp),
+                            contentDescription = null,
+                            tint = HamedThemeColors.AccentCyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                Column {
+                    Text(
+                        text = stringResource(R.string.hamed_scan_ip_title),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = HamedThemeColors.TextSecondary
+                    )
+                    Text(
+                        text = when (selectedIpVersion) {
+                            AetherIpVersion.V4 -> "IPv4 (اسکن اختصاصی IPv4)"
+                            AetherIpVersion.V6 -> "IPv6 (اسکن اختصاصی IPv6)"
+                            AetherIpVersion.DUAL -> "Dual (هر دو IPv4 و IPv6)"
+                        },
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                }
+            }
+
+            // Segmented Options: IPv4, IPv6, Dual
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    Pair(AetherIpVersion.V4, "IPv4"),
+                    Pair(AetherIpVersion.V6, "IPv6"),
+                    Pair(AetherIpVersion.DUAL, "Dual (هر دو)")
+                ).forEach { (version, label) ->
+                    val isSelected = selectedIpVersion == version
+                    val border = if (isSelected) {
+                        BorderStroke(1.5.dp, HamedThemeColors.AccentCyan)
+                    } else {
+                        BorderStroke(1.dp, HamedThemeColors.Border)
+                    }
+                    val bg = if (isSelected) {
+                        Brush.horizontalGradient(listOf(Color(0xFF0052D4), Color(0xFF4364F7)))
+                    } else {
+                        Brush.horizontalGradient(listOf(Color(0xFF141935), Color(0xFF141935)))
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelect(version) },
+                        shape = RoundedCornerShape(12.dp),
+                        border = border,
+                        color = Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(bg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 12.sp
+                                ),
+                                color = if (isSelected) Color.White else HamedThemeColors.TextSecondary
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

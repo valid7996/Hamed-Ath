@@ -49,6 +49,10 @@
     <string name="hamed_setting_masque_transport">Masque Transport</string>
     <string name="hamed_setting_scan_mode">Scan Mode</string>
     <string name="hamed_setting_obfuscation">Obfuscation</string>
+    <string name="hamed_scan_ip_title">نسخه IP اسکن</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">هر دو (Dual)</string>
     <string name="hamed_section_masque">تنظیمات Masque</string>
     <string name="hamed_masque_transport">ترانسپورت Masque</string>
     <string name="hamed_masque_scan_mode">حالت اسکن Masque</string>

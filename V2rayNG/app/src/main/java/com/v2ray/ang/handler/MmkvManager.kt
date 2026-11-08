@@ -1181,7 +1181,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsBool(key: String): Boolean {
-        val defaultVal = key == AppConfig.PREF_SPEED_ENABLED || key == AppConfig.PREF_AETHER_FRAGMENT_ENABLED
+        val defaultVal = key == AppConfig.PREF_SPEED_ENABLED
         return settingsStorage.decodeBool(key, defaultVal)
     }
 
@@ -1195,8 +1195,8 @@ object MmkvManager {
     fun decodeSettingsBool(key: String, defaultValue: Boolean): Boolean {
         val effectiveDefault = if (key == AppConfig.PREF_SPEED_ENABLED && !settingsStorage.containsKey(key)) {
             true
-        } else if (key == AppConfig.PREF_AETHER_FRAGMENT_ENABLED && !settingsStorage.containsKey(key)) {
-            true
+        } else if (key == AppConfig.PREF_AETHER_FRAGMENT_ENABLED) {
+            false
         } else {
             defaultValue
         }

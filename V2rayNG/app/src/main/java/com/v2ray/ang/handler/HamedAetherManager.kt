@@ -113,9 +113,9 @@ object HamedAetherManager {
             aetherPsiphon = AetherPsiphon.OFF.type
             aetherTor = AetherTor.OFF.type
             aetherFingerprint = "chrome"
-            aetherFragment = true
-            aetherFragmentSize = "10-30"
-            aetherFragmentDelay = "10-20"
+            aetherFragment = false
+            aetherFragmentSize = null
+            aetherFragmentDelay = null
             aetherScanMode = "balanced"
         }
         applySettingsToProfile(profile)
@@ -145,12 +145,18 @@ object HamedAetherManager {
                 aetherPsiphon = AetherPsiphon.OFF.type
                 aetherTor = AetherTor.OFF.type
                 aetherFingerprint = "chrome"
-                aetherFragment = true
-                aetherFragmentSize = "10-30"
-                aetherFragmentDelay = "10-20"
+                aetherFragment = false
+                aetherFragmentSize = null
+                aetherFragmentDelay = null
                 aetherScanMode = "balanced"
             }
             applySettingsToProfile(profile)
+            MmkvManager.encodeServerConfig(guid, profile)
+        } else if (profile.aetherFragment == true) {
+            // Enforce fragment = false per user configuration
+            profile.aetherFragment = false
+            profile.aetherFragmentSize = null
+            profile.aetherFragmentDelay = null
             MmkvManager.encodeServerConfig(guid, profile)
         }
         return Pair(guid, profile)
@@ -168,7 +174,7 @@ object HamedAetherManager {
         val dialMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_DIAL_MODE, "")
 
         val sni = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SNI_OVERRIDE, AppConfig.AETHER_MASQUE_SNI) ?: AppConfig.AETHER_MASQUE_SNI
-        val fragment = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, true)
+        val fragment = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, false)
         val fragmentSize = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_SIZE_OVERRIDE, "10-30") ?: "10-30"
         val fragmentDelay = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_DELAY_OVERRIDE, "10-20") ?: "10-20"
         val ech = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_ECH_ENABLED, false)
@@ -178,8 +184,13 @@ object HamedAetherManager {
         profile.aetherObfuscation = obfs
         profile.aetherMasqueSni = sni
         profile.aetherFragment = fragment
-        profile.aetherFragmentSize = fragmentSize
-        profile.aetherFragmentDelay = fragmentDelay
+        if (fragment) {
+            profile.aetherFragmentSize = fragmentSize
+            profile.aetherFragmentDelay = fragmentDelay
+        } else {
+            profile.aetherFragmentSize = null
+            profile.aetherFragmentDelay = null
+        }
         profile.aetherEch = ech
         if (!finalMask.isNullOrBlank()) {
             profile.finalMask = finalMask.trim()
@@ -202,6 +213,16 @@ object HamedAetherManager {
         } else {
             profile.server = ""
         }
+        MmkvManager.encodeServerConfig(guid, profile)
+        return profile
+    }
+
+    /**
+     * Updates the IP version to scan and connect over (IPv4, IPv6, DUAL).
+     */
+    fun updateIpVersion(ipVersion: AetherIpVersion): ProfileItem {
+        val (guid, profile) = getActiveAetherProfile()
+        profile.aetherIpVersion = ipVersion.type
         MmkvManager.encodeServerConfig(guid, profile)
         return profile
     }
@@ -272,9 +293,9 @@ object HamedAetherManager {
                     }
                     val updatedSettings = settings.copy(
                         kind = keyKind,
-                        fragment = true,
-                        fragmentSize = if (settings.fragmentSize.isBlank()) "10-30" else settings.fragmentSize,
-                        fragmentDelay = if (settings.fragmentDelay.isBlank()) "10-20" else settings.fragmentDelay,
+                        fragment = false,
+                        fragmentSize = "",
+                        fragmentDelay = "",
                         fingerprint = AetherFingerprint.CHROME
                     )
                     repo.saveSettings(updatedSettings)
