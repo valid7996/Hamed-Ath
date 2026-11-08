@@ -179,6 +179,9 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
     - name: Setup Keystore
       id: android_keystore
       run: |
@@ -200,22 +203,29 @@ jobs:
 
     - name: Build APK
       run: |
+        set -euo pipefail
         cd ${{ github.workspace }}/V2rayNG
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
-        ./gradlew assembleRelease -PpattngVersion="${{ inputs.release_tag }}" -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ steps.android_keystore.outputs.storePassword }} -Pandroid.injected.signing.key.alias=${{ steps.android_keystore.outputs.keyAlias }} -Pandroid.injected.signing.key.password=${{ steps.android_keystore.outputs.keyPassword }} 2>&1 | tee gradle_build.log || {
-          status=$?
-          echo "### Gradle Build Failed" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          grep -E "e: |FAILED|ERROR" gradle_build.log | tail -n 40 >> $GITHUB_STEP_SUMMARY || tail -n 40 gradle_build.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          exit $status
-        }
+        ./gradlew assembleRelease \
+          -PpattngVersion="${{ inputs.release_tag }}" \
+          -Pandroid.injected.signing.store.file="${{ steps.android_keystore.outputs.filePath }}" \
+          -Pandroid.injected.signing.store.password="${{ steps.android_keystore.outputs.storePassword }}" \
+          -Pandroid.injected.signing.key.alias="${{ steps.android_keystore.outputs.keyAlias }}" \
+          -Pandroid.injected.signing.key.password="${{ steps.android_keystore.outputs.keyPassword }}" \
+          --no-daemon \
+          --stacktrace
     
     - name: Check the native libraries in the APKs
       run: |
+        shopt -s nullglob
+        apks=(${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk)
+        if [ ${#apks[@]} -eq 0 ]; then
+          echo "::error::No release APKs were produced!"
+          exit 1
+        fi
         status=0
-        for apk in ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk; do
+        for apk in "${apks[@]}"; do
           entries=$(unzip -Z1 "$apk" | grep '^lib/' || true)
           echo "$(basename "$apk"):"
           echo "$entries" | sed 's/^/  /'
@@ -237,6 +247,7 @@ jobs:
       with:
         name: HamedAether-APKs
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+        if-no-files-found: error
 
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
@@ -252,6 +263,7 @@ jobs:
           - Fast IP & Country flag detection (with Cloudflare + Psiphon exit nodes)
           - Streamlined Settings (pure Aether Masque & WireGuard options)
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+        fail_on_unmatched_files: true
         prerelease: false
         make_latest: true
       env:
