@@ -161,24 +161,32 @@ object HamedAetherManager {
      */
     fun applySettingsToProfile(profile: ProfileItem) {
         val transport = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_TRANSPORT, AetherTransport.HTTP2.type) ?: AetherTransport.HTTP2.type
-        val masqueScanMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SCAN_MODE, "balanced") ?: "balanced"
-        val wgScanMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_WG_SCAN_MODE, "balanced") ?: "balanced"
+        val scanMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_SCAN_MODE, "balanced")
+            ?: MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SCAN_MODE, "balanced") ?: "balanced"
+        val obfs = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, AetherObfuscation.AUTO.type) ?: AetherObfuscation.AUTO.type
+        val finalMask = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FINAL_MASK, "")
+        val dialMode = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_DIAL_MODE, "")
+
         val sni = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_MASQUE_SNI_OVERRIDE, AppConfig.AETHER_MASQUE_SNI) ?: AppConfig.AETHER_MASQUE_SNI
         val fragment = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, true)
         val fragmentSize = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_SIZE_OVERRIDE, "10-30") ?: "10-30"
         val fragmentDelay = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_FRAGMENT_DELAY_OVERRIDE, "10-20") ?: "10-20"
         val ech = MmkvManager.decodeSettingsBool(AppConfig.PREF_AETHER_ECH_ENABLED, false)
-        val obfs = MmkvManager.decodeSettingsString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, AetherObfuscation.AUTO.type) ?: AetherObfuscation.AUTO.type
 
-        val protocol = AetherProtocol.fromString(profile.aetherProtocol)
         profile.aetherTransport = transport
+        profile.aetherScanMode = scanMode
+        profile.aetherObfuscation = obfs
         profile.aetherMasqueSni = sni
         profile.aetherFragment = fragment
         profile.aetherFragmentSize = fragmentSize
         profile.aetherFragmentDelay = fragmentDelay
         profile.aetherEch = ech
-        profile.aetherScanMode = if (protocol.overMasque) masqueScanMode else wgScanMode
-        profile.aetherObfuscation = obfs
+        if (!finalMask.isNullOrBlank()) {
+            profile.finalMask = finalMask.trim()
+        }
+        if (!dialMode.isNullOrBlank()) {
+            profile.dialMode = dialMode.trim()
+        }
     }
 
     /**
@@ -379,54 +387,72 @@ object HamedAetherManager {
             _connectionInfo.value = _connectionInfo.value.copy(isTesting = true)
             val startTime = System.currentTimeMillis()
             var detected = false
-            try {
-                val url = java.net.URL("https://cloudflare.com/cdn-cgi/trace")
-                val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
-                    connectTimeout = 3500
-                    readTimeout = 3500
-                    instanceFollowRedirects = true
-                    setRequestProperty("User-Agent", "Mozilla/5.0 HamedAether")
-                }
-                val code = conn.responseCode
-                val latency = System.currentTimeMillis() - startTime
-                if (code == 200) {
-                    val lines = conn.inputStream.bufferedReader().readLines()
-                    var ip = ""
-                    var loc = ""
-                    for (line in lines) {
-                        if (line.startsWith("ip=")) ip = line.substring(3).trim()
-                        if (line.startsWith("loc=")) loc = line.substring(4).trim()
-                    }
-                    if (ip.isNotBlank()) {
-                        val (_, profile) = getActiveAetherProfile()
-                        val isChained = AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
-                                        AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
 
-                        val exitFlag = countryCodeToEmojiFlag(loc)
-                        val info = HamedConnectionInfo(
-                            ip = ip,
-                            country = loc.ifBlank { "OK" },
-                            flagEmoji = exitFlag,
-                            carrierFlagEmoji = "🇺🇸",
-                            carrierName = "Cloudflare WARP",
-                            isChained = isChained,
-                            pingMs = latency,
-                            isTesting = false,
-                            testError = null
-                        )
-                        _connectionInfo.value = info
-                        onComplete?.invoke(info)
-                        detected = true
+            val endpoints = listOf(
+                "https://1.1.1.1/cdn-cgi/trace",
+                "https://1.0.0.1/cdn-cgi/trace",
+                "https://cloudflare.com/cdn-cgi/trace",
+                "http://ip-api.com/line?fields=query,countryCode"
+            )
+
+            for (endpoint in endpoints) {
+                if (detected) break
+                try {
+                    val url = java.net.URL(endpoint)
+                    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                        connectTimeout = 2000
+                        readTimeout = 2000
+                        instanceFollowRedirects = true
+                        setRequestProperty("User-Agent", "Mozilla/5.0 HamedAether")
                     }
+                    val code = conn.responseCode
+                    val latency = System.currentTimeMillis() - startTime
+                    if (code == 200) {
+                        val body = conn.inputStream.bufferedReader().readText()
+                        var ip = ""
+                        var loc = ""
+                        if (endpoint.contains("ip-api")) {
+                            val lines = body.lines().filter { it.isNotBlank() }
+                            ip = lines.getOrNull(0)?.trim().orEmpty()
+                            loc = lines.getOrNull(1)?.trim().orEmpty()
+                        } else {
+                            for (line in body.lines()) {
+                                if (line.startsWith("ip=")) ip = line.substring(3).trim()
+                                if (line.startsWith("loc=")) loc = line.substring(4).trim()
+                            }
+                        }
+                        if (ip.isNotBlank() && ip.contains(".")) {
+                            val (_, profile) = getActiveAetherProfile()
+                            val isChained = AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
+                                            AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
+
+                            val exitFlag = countryCodeToEmojiFlag(loc)
+                            val info = HamedConnectionInfo(
+                                ip = ip,
+                                country = loc.ifBlank { "OK" },
+                                flagEmoji = exitFlag,
+                                carrierFlagEmoji = "🇺🇸",
+                                carrierName = "Cloudflare WARP",
+                                isChained = isChained,
+                                pingMs = latency,
+                                isTesting = false,
+                                testError = null
+                            )
+                            _connectionInfo.value = info
+                            onComplete?.invoke(info)
+                            detected = true
+                            break
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogUtil.d(TAG, "Fast probe $endpoint error: ${e.message}")
                 }
-            } catch (e: Exception) {
-                LogUtil.d(TAG, "Fast trace error: ${e.message}")
             }
 
-            if (!detected) {
+            if (!detected && _connectionInfo.value.ip == "---") {
                 _connectionInfo.value = _connectionInfo.value.copy(
                     isTesting = false,
-                    testError = if (_connectionInfo.value.ip == "---") "تست اتصال..." else null
+                    testError = "در حال شناسایی..."
                 )
             }
         }

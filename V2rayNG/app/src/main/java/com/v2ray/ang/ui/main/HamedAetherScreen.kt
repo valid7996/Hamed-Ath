@@ -115,9 +115,14 @@ fun HamedAetherScreen(
     // Auto fast IP detection and ping test on connect, reset on disconnect
     LaunchedEffect(isRunning) {
         if (isRunning) {
-            delay(500)
             HamedAetherManager.fetchFastPublicIp()
-            delay(1200)
+            var retries = 0
+            while (retries < 6 && HamedAetherManager.connectionInfo.value.ip == "---") {
+                delay(800)
+                HamedAetherManager.fetchFastPublicIp()
+                retries++
+            }
+            delay(400)
             onAction(MainAction.TestCurrentServer)
         } else {
             HamedAetherManager.resetTraffic()

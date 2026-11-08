@@ -36,12 +36,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.VPN
 import com.v2ray.ang.R
-import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.handler.HamedAetherManager
 import com.v2ray.ang.ui.AboutActivity
 import com.v2ray.ang.ui.perappproxy.PerAppProxyActivity
-import com.v2ray.ang.ui.server.ServerAetherActivity
-import com.v2ray.ang.ui.server.ServerAetherKeysActivity
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.MmkvManager
@@ -112,36 +109,25 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val systemVpnSettingsAvailable by viewModel.systemVpnSettingsAvailable.collectAsStateWithLifecycle()
-    val aetherListenPort by viewModel.aetherListenPort.collectAsStateWithLifecycle()
-    var masqueSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var wireguardSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+
+    var aetherSettingsExpanded by rememberSaveable { mutableStateOf(true) }
     var generalSettingsExpanded by rememberSaveable { mutableStateOf(true) }
 
+    // 1. Masque Transport
     var aetherTransport by rememberMmkvString(AppConfig.PREF_AETHER_TRANSPORT, "h2")
-    var masqueScanMode by rememberMmkvString(AppConfig.PREF_AETHER_MASQUE_SCAN_MODE, "balanced")
-    var wgScanMode by rememberMmkvString(AppConfig.PREF_AETHER_WG_SCAN_MODE, "balanced")
-    var masqueSni by rememberMmkvString(AppConfig.PREF_AETHER_MASQUE_SNI_OVERRIDE, AppConfig.AETHER_MASQUE_SNI)
-    var aetherFragment by rememberMmkvBool(AppConfig.PREF_AETHER_FRAGMENT_ENABLED, true)
-    var aetherFragmentSize by rememberMmkvString(AppConfig.PREF_AETHER_FRAGMENT_SIZE_OVERRIDE, "10-30")
-    var aetherFragmentDelay by rememberMmkvString(AppConfig.PREF_AETHER_FRAGMENT_DELAY_OVERRIDE, "10-20")
-    var aetherEch by rememberMmkvBool(AppConfig.PREF_AETHER_ECH_ENABLED, false)
+    // 2. Scan Mode
+    var aetherScanMode by rememberMmkvString(AppConfig.PREF_AETHER_SCAN_MODE, "balanced")
+    // 3. Obfuscation
     var aetherObfuscation by rememberMmkvString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, "auto")
+    // 4. exit-node finalMask raw JSON
+    var aetherFinalMask by rememberMmkvString(AppConfig.PREF_AETHER_FINAL_MASK, "")
+    // 5. exit-node dialMode
+    var aetherDialMode by rememberMmkvString(AppConfig.PREF_AETHER_DIAL_MODE, "")
 
     fun syncAetherProfile() {
         val (guid, profile) = HamedAetherManager.getActiveAetherProfile()
         HamedAetherManager.applySettingsToProfile(profile)
         MmkvManager.encodeServerConfig(guid, profile)
-    }
-
-    val (_, initialActiveProf) = remember { HamedAetherManager.getActiveAetherProfile() }
-    var masqueVariant by rememberSaveable {
-        mutableStateOf(
-            when (initialActiveProf.aetherProtocol) {
-                AetherProtocol.MIM.type -> "mim"
-                AetherProtocol.WG_OVER_MASQUE.type -> "wireguard-over-masque"
-                else -> "masque"
-            }
-        )
     }
 
     var mode by rememberMmkvString(AppConfig.PREF_MODE, VPN)
@@ -177,8 +163,6 @@ fun SettingsScreen(
     val scanValues = stringArrayResource(R.array.aether_scan_values).toList()
     val obfuscationEntries = stringArrayResource(R.array.aether_obfuscation_entries).toList()
     val obfuscationValues = stringArrayResource(R.array.aether_obfuscation_values).toList()
-    val masqueVariantEntries = stringArrayResource(R.array.hamed_masque_protocol_entries).toList()
-    val masqueVariantValues = stringArrayResource(R.array.hamed_masque_protocol_values).toList()
 
     Scaffold(
         containerColor = HamedThemeColors.Background,
@@ -201,16 +185,17 @@ fun SettingsScreen(
             val context = LocalContext.current
 
             // ==========================================
-            // بخش اول: تنظیمات Masque
+            // بخش اول: تنظیمات Aether
             // ==========================================
             CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.hamed_section_masque),
-                expanded = masqueSettingsExpanded,
-                onExpandedChange = { masqueSettingsExpanded = it }
+                title = stringResource(R.string.hamed_section_aether),
+                expanded = aetherSettingsExpanded,
+                onExpandedChange = { aetherSettingsExpanded = it }
             )
-            if (masqueSettingsExpanded) {
+            if (aetherSettingsExpanded) {
+                // 1. Masque Transport
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_masque_transport),
+                    title = stringResource(R.string.hamed_setting_masque_transport),
                     entries = transportEntries,
                     values = transportValues,
                     selectedValue = aetherTransport,
@@ -219,99 +204,20 @@ fun SettingsScreen(
                         syncAetherProfile()
                     }
                 )
+                // 2. Scan Mode
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_masque_scan_mode),
+                    title = stringResource(R.string.hamed_setting_scan_mode),
                     entries = scanEntries,
                     values = scanValues,
-                    selectedValue = masqueScanMode,
+                    selectedValue = aetherScanMode,
                     onSelected = {
-                        masqueScanMode = it
+                        aetherScanMode = it
                         syncAetherProfile()
                     }
                 )
+                // 3. Obfuscation
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_masque_protocol_variant),
-                    entries = masqueVariantEntries,
-                    values = masqueVariantValues,
-                    selectedValue = masqueVariant,
-                    onSelected = {
-                        masqueVariant = it
-                        val proto = when (it) {
-                            "mim" -> AetherProtocol.MIM
-                            "wireguard-over-masque" -> AetherProtocol.WG_OVER_MASQUE
-                            else -> AetherProtocol.MASQUE
-                        }
-                        HamedAetherManager.updateProtocol(proto)
-                    }
-                )
-                SettingsEditItem(
-                    title = stringResource(R.string.hamed_masque_sni),
-                    value = masqueSni,
-                    onValueChanged = {
-                        masqueSni = it
-                        syncAetherProfile()
-                    }
-                )
-                SettingsSwitchItem(
-                    title = stringResource(R.string.hamed_masque_fragment),
-                    summary = stringResource(R.string.hamed_masque_fragment_summary),
-                    checked = aetherFragment,
-                    onCheckedChange = {
-                        aetherFragment = it
-                        syncAetherProfile()
-                    }
-                )
-                if (aetherFragment) {
-                    SettingsEditItem(
-                        title = stringResource(R.string.hamed_masque_fragment_size),
-                        value = aetherFragmentSize,
-                        onValueChanged = {
-                            aetherFragmentSize = it
-                            syncAetherProfile()
-                        }
-                    )
-                    SettingsEditItem(
-                        title = stringResource(R.string.hamed_masque_fragment_delay),
-                        value = aetherFragmentDelay,
-                        keyboardNumber = true,
-                        onValueChanged = {
-                            aetherFragmentDelay = it
-                            syncAetherProfile()
-                        }
-                    )
-                }
-                SettingsSwitchItem(
-                    title = stringResource(R.string.hamed_masque_ech),
-                    summary = stringResource(R.string.hamed_masque_ech_summary),
-                    checked = aetherEch,
-                    onCheckedChange = {
-                        aetherEch = it
-                        syncAetherProfile()
-                    }
-                )
-            }
-
-            // ==========================================
-            // بخش دوم: تنظیمات وایرگارد (WireGuard)
-            // ==========================================
-            CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.hamed_section_wireguard),
-                expanded = wireguardSettingsExpanded,
-                onExpandedChange = { wireguardSettingsExpanded = it }
-            )
-            if (wireguardSettingsExpanded) {
-                SettingsListItem(
-                    title = stringResource(R.string.hamed_wg_scan_mode),
-                    entries = scanEntries,
-                    values = scanValues,
-                    selectedValue = wgScanMode,
-                    onSelected = {
-                        wgScanMode = it
-                        syncAetherProfile()
-                    }
-                )
-                SettingsListItem(
-                    title = stringResource(R.string.hamed_wg_obfuscation),
+                    title = stringResource(R.string.hamed_setting_obfuscation),
                     entries = obfuscationEntries,
                     values = obfuscationValues,
                     selectedValue = aetherObfuscation,
@@ -320,16 +226,28 @@ fun SettingsScreen(
                         syncAetherProfile()
                     }
                 )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_lock_24dp),
-                    title = stringResource(R.string.hamed_wg_renew_keys),
-                    subtitle = stringResource(R.string.hamed_wg_renew_keys_summary),
-                    onClick = { context.startActivity(Intent(context, ServerAetherKeysActivity::class.java)) }
+                // 4. exit-node finalMask raw JSON, format: { FinalMaskObject }
+                SettingsEditItem(
+                    title = stringResource(R.string.aether_lab_exit_final_mask),
+                    value = aetherFinalMask,
+                    onValueChanged = {
+                        aetherFinalMask = it
+                        syncAetherProfile()
+                    }
+                )
+                // 5. exit-node dialMode
+                SettingsEditItem(
+                    title = stringResource(R.string.aether_lab_exit_dial_mode),
+                    value = aetherDialMode,
+                    onValueChanged = {
+                        aetherDialMode = it
+                        syncAetherProfile()
+                    }
                 )
             }
 
             // ==========================================
-            // بخش سوم: تنظیمات عمومی و کاربری
+            // بخش دوم: تنظیمات عمومی و کاربری
             // ==========================================
             CollapsiblePreferenceGroupHeader(
                 title = stringResource(R.string.hamed_section_general),
@@ -392,12 +310,6 @@ fun SettingsScreen(
                         dynamicColor = it
                         ThemeManager.setDynamicColorEnabled(it)
                     }
-                )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_routing_24dp),
-                    title = stringResource(R.string.title_aether_core),
-                    subtitle = stringResource(R.string.hamed_settings_aether_summary),
-                    onClick = { context.startActivity(Intent(context, ServerAetherActivity::class.java)) }
                 )
                 SettingsMenuItem(
                     icon = painterResource(R.drawable.ic_about_24dp),

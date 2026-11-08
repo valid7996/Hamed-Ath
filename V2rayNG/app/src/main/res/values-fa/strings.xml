@@ -45,6 +45,10 @@
     <string name="hamed_settings_mode_summary">تغییر بین حالت VPN (TUN) و حالت پروکسی (Proxy)</string>
     <string name="hamed_settings_per_app">تفکیک و انتخاب برنامه‌ها (Per-app Proxy)</string>
 
+    <string name="hamed_section_aether">تنظیمات Aether</string>
+    <string name="hamed_setting_masque_transport">Masque Transport</string>
+    <string name="hamed_setting_scan_mode">Scan Mode</string>
+    <string name="hamed_setting_obfuscation">Obfuscation</string>
     <string name="hamed_section_masque">تنظیمات Masque</string>
     <string name="hamed_masque_transport">ترانسپورت Masque</string>
     <string name="hamed_masque_scan_mode">حالت اسکن Masque</string>

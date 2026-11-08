@@ -87,6 +87,9 @@ object AppConfig {
     /** Hamed Aether: Global defaults and active overrides for Masque and WireGuard */
     const val PREF_AETHER_TRANSPORT = "pref_aether_transport"
     const val PREF_HAMED_BUTTON_POSITION = "pref_hamed_button_position"
+    const val PREF_AETHER_SCAN_MODE = "pref_aether_scan_mode"
+    const val PREF_AETHER_FINAL_MASK = "pref_aether_final_mask"
+    const val PREF_AETHER_DIAL_MODE = "pref_aether_dial_mode"
     const val PREF_AETHER_MASQUE_SCAN_MODE = "pref_aether_masque_scan_mode"
     const val PREF_AETHER_WG_SCAN_MODE = "pref_aether_wg_scan_mode"
     const val PREF_AETHER_MASQUE_SNI_OVERRIDE = "pref_aether_masque_sni_override"
@@ -170,7 +173,7 @@ object AppConfig {
     const val APP_WIKI_MODE = "$APP_URL/wiki/Mode"
     const val APP_PRIVACY_POLICY = "$GITHUB_RAW_URL/2dust/v2rayNG/master/CR.md"
     const val APP_PROMOTION_URL = "aHR0cHM6Ly85LjIzNDQ1Ni54eXovYWJjLmh0bWw="
-    const val TG_CHANNEL_URL = "https://t.me/github_2dust"
+    const val TG_CHANNEL_URL = "https://t.me/hamedvpns"
     const val DELAY_TEST_URL = "https://www.gstatic.com/generate_204"
     const val DELAY_TEST_URL2 = "https://www.google.com/generate_204"
     const val OBSERVATORY_LEAST_PING_INTERVAL = "3m"
