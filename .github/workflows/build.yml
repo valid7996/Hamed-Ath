@@ -254,16 +254,17 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.3
-        name: Hamed Aether v1.0.3 (Official Signed Release)
+        tag_name: v1.0.4
+        name: Hamed Aether v1.0.4 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.3** (Non-Debug, Keystore Signed)
-          - New ZedSecure-style 3-Tier Layout:
-            1. Top: Protocol & Server Selection Card (purple gradient, flag, IP pill, Aether core badge, latency ms, expandable options)
-            2. Middle: Wide Hero Connect Banner (lime green connected state with dark power button badge, bold elapsed time, subtext)
-            3. Bottom: Connection & IP Dashboard (Upload & Download animated waveform curves, session traffic, ping test, IP & Location card)
-          - Pinned bottom breadcrumb bar permanently fixed at bottom
-          - Fast IP & Country flag detection (Cloudflare + Psiphon exit nodes)
+          Official Production Release of **Hamed Aether v1.0.4** (Non-Debug, Keystore Signed)
+          - Streamlined ZedSecure Layout Refinements:
+            1. Top Server Card: Speed test / ping refresh button integrated directly next to latency ping badge.
+            2. Top Bar: Clean centered app title (logo and subtitle text removed).
+            3. Bottom Dashboard: Dedicated Upload & Download oscilloscope waveforms + Session Traffic & Duration (redundant IP card removed).
+            4. Turbo Scan Mode: Renamed Ultra Premium to Turbo Scan ("اسکن توربو") which activates high-speed aggressive clean IP discovery.
+            5. Localized Connection Status: Full Persian status messages ("در حال اسکن آی‌پی تمیز", "در حال دریافت و ثبت کلیدها", "در حال برقراری اتصال").
+            6. Redesigned Cyber Shield App Icon: Brand-new professional shield logo with stylized letter 'H' across all densities and adaptive safe zones.
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         fail_on_unmatched_files: true
         prerelease: false

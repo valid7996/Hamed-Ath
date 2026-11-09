@@ -106,7 +106,7 @@
     <string name="hamed_tile_total_title">Total Transfer</string>
     <string name="hamed_tile_refresh">Refresh</string>
     <string name="hamed_tile_hide">Hide tile</string>
-    <string name="hamed_tile_premium_title">Ultra Premium</string>
+    <string name="hamed_tile_premium_title">Turbo Scan</string>
     <string name="hamed_tile_theme_title">Color Theme</string>
     <string name="hamed_tile_font_title">Font Size</string>
     <string name="hamed_tile_edit_hint">Long-press a tile to edit:\ndrag to reorder, × hides it</string>
@@ -118,7 +118,7 @@
     <string name="hamed_status_subtitle_secure">Secure Tunnel Manager</string>
 
     <!-- Hamed Aether connection preparation -->
-    <string name="hamed_premium_connecting_status">Ultra Premium: ironclad clean-IP scan…</string>
+    <string name="hamed_premium_connecting_status">Turbo Scan: Scanning fast clean IP…</string>
     <string name="hamed_prep_keys">Registering WARP keys…</string>
     <string name="hamed_prep_scanning">Scanning for a clean IP…</string>
     <string name="hamed_prep_connecting">Connecting…</string>

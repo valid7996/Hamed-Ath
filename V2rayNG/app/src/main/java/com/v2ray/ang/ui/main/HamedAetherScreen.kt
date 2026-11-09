@@ -516,51 +516,19 @@ fun HamedTopBar(
                 }
             }
 
-            // Logo & App Name (Center)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // App Name (Center)
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_hamed_logo),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.hamed_aether_title),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = HamedThemeColors.TextPrimary
-                    )
-                }
-                val statusSubText = when {
-                    preparationStatus != null -> preparationStatus
-                    isConnecting -> {
-                        val connectingMessage = (status as? MainStatus.Connecting)?.message
-                        if (!connectingMessage.isNullOrBlank()) connectingMessage
-                        else stringResource(R.string.hamed_btn_connecting)
-                    }
-                    isActuallyConnected -> stringResource(R.string.connection_connected) +
-                            "  ·  " + formatHamedElapsed(elapsedSeconds)
-                    else -> stringResource(R.string.hamed_status_subtitle_secure)
-                }
-                val statusSubColor = when {
-                    isConnecting -> HamedThemeColors.Warning
-                    isActuallyConnected -> HamedThemeColors.Success
-                    else -> HamedThemeColors.TextSecondary
-                }
                 Text(
-                    text = statusSubText,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isActuallyConnected) FontWeight.Bold else FontWeight.Normal
+                    text = stringResource(R.string.hamed_aether_title),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        letterSpacing = 0.5.sp
                     ),
-                    color = statusSubColor
+                    color = HamedThemeColors.TextPrimary
                 )
             }
 

@@ -1607,6 +1607,35 @@ fun HamedServerCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                // Speed Test Button (beside Ping)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0x40000000),
+                    border = BorderStroke(0.8.dp, Color(0x22FFFFFF)),
+                    modifier = Modifier.clickable { onTestPing() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_refresh_24dp),
+                            contentDescription = stringResource(R.string.hamed_speed_test),
+                            tint = HamedThemeColors.AccentCyan,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.hamed_speed_test),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp
+                            ),
+                            color = Color.White
+                        )
+                    }
+                }
+
                 // Latency Ping Badge
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -1615,7 +1644,7 @@ fun HamedServerCard(
                     modifier = Modifier.clickable { onTestPing() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -1841,52 +1870,6 @@ fun HamedConnectionDashboardBottom(
                     )
                 }
             }
-        }
-
-        // Row 3: Action Buttons / Speed Test
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            Surface(
-                onClick = onTestPing,
-                shape = RoundedCornerShape(14.dp),
-                color = HamedThemeColors.CardBackground,
-                border = BorderStroke(1.dp, HamedThemeColors.Border)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.hamed_speed_test),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = HamedThemeColors.TextPrimary
-                    )
-                    Icon(
-                        painter = painterResource(R.drawable.ic_refresh_24dp),
-                        contentDescription = null,
-                        tint = HamedThemeColors.AccentCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-
-        // Row 4: IP & Location Card
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = HamedThemeColors.CardBackground,
-            border = BorderStroke(1.dp, HamedThemeColors.Border)
-        ) {
-            HamedIpInfoTile(
-                tileContext = tileContext,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            )
         }
     }
 }

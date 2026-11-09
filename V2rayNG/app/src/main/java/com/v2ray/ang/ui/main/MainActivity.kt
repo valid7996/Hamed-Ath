@@ -187,7 +187,8 @@ class MainActivity : HelperBaseComponentActivity() {
             return
         }
 
-        com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(getString(R.string.aether_keys_missing))
+        val locCtx = com.v2ray.ang.handler.AppLocaleManager.localizedContext(this)
+        com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(locCtx.getString(R.string.hamed_prep_connecting))
         com.v2ray.ang.handler.HamedAetherManager.prepareAndConnect(
             context = this,
             ultraPremium = MmkvManager.decodeSettingsBool(AppConfig.PREF_HAMED_ULTRA_PREMIUM, false),

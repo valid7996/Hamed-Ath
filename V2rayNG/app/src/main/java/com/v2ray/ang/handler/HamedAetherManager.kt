@@ -289,15 +289,16 @@ object HamedAetherManager {
         prepareJob?.cancel()
         prepareJob = scope.launch {
             try {
+                val locCtx = AppLocaleManager.localizedContext(context)
                 val (guid, profile) = getActiveAetherProfile()
                 applySettingsToProfile(profile)
 
                 if (ultraPremium) {
                     withContext(Dispatchers.Main) {
-                        onStatusChange(context.getString(R.string.hamed_premium_connecting_status))
+                        onStatusChange(locCtx.getString(R.string.hamed_premium_connecting_status))
                     }
-                    profile.aetherScanMode = AetherScanMode.IRONCLAD.type
-                    // Drop every cached endpoint so a fresh clean scan has to find a working exit.
+                    // Turbo scan: Fast turbo discovery mode
+                    profile.aetherScanMode = AetherScanMode.TURBO.type
                     profile.server = ""
                     profile.aetherWiwOuter = null
                     profile.aetherWiwInner = null
@@ -324,7 +325,7 @@ object HamedAetherManager {
                 val missingFiles = AetherIdentityManager.missing(context, neededFiles)
                 if (missingFiles.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
-                        onStatusChange(context.getString(R.string.hamed_prep_keys))
+                        onStatusChange(locCtx.getString(R.string.hamed_prep_keys))
                     }
                     val repo = AetherKeysRepository(context)
                     val settings = repo.loadSettings()
@@ -365,7 +366,7 @@ object HamedAetherManager {
 
                 if (needsScan) {
                     withContext(Dispatchers.Main) {
-                        onStatusChange(context.getString(R.string.hamed_prep_scanning))
+                        onStatusChange(locCtx.getString(R.string.hamed_prep_scanning))
                     }
                     LogUtil.i(TAG, "Scanning clean endpoint for ${profile.aetherProtocol}...")
                     val scanResult = AetherScanner.scan(context, profile) { line ->
@@ -387,7 +388,7 @@ object HamedAetherManager {
                 }
 
                 withContext(Dispatchers.Main) {
-                    onStatusChange(context.getString(R.string.hamed_prep_connecting))
+                    onStatusChange(locCtx.getString(R.string.hamed_prep_connecting))
                     onSuccess(guid)
                 }
             } catch (ce: CancellationException) {
@@ -398,8 +399,9 @@ object HamedAetherManager {
             } catch (e: Exception) {
                 LogUtil.e(TAG, "prepareAndConnect error", e)
                 withContext(Dispatchers.Main) {
+                    val locCtx = AppLocaleManager.localizedContext(context)
                     _preparationStatus.value = null
-                    onError(e.message ?: context.getString(R.string.hamed_prep_failed))
+                    onError(e.message ?: locCtx.getString(R.string.hamed_prep_failed))
                 }
             } finally {
                 prepareJob = null
