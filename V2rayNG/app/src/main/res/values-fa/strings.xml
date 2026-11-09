@@ -82,6 +82,11 @@
     <string name="hamed_btn_connecting">در حال اتصال...</string>
     <string name="hamed_connected_time">مدت اتصال: %s</string>
     <string name="hamed_obfs_title">مبهم‌سازی</string>
+    <string name="hamed_obfs_auto">خودکار (Auto)</string>
+    <string name="hamed_obfs_firewall">فایروال (Firewall)</string>
+    <string name="hamed_obfs_balanced">متعادل (Balanced)</string>
+    <string name="hamed_obfs_aggressive">تهاجمی (Aggressive)</string>
+    <string name="hamed_obfs_off">خاموش (Off)</string>
     <string name="hamed_renew_warp_keys">تمدید کلیدهای وارپ</string>
     <string name="hamed_settings_aether_title">تنظیمات اِتِر (Aether)</string>
     <string name="hamed_settings_aether_summary">پیکربندی کامل پارامترها و ویژگی‌های تونل Aether</string>

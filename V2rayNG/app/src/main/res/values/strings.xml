@@ -38,6 +38,11 @@
     <string name="hamed_btn_connecting">Connecting...</string>
     <string name="hamed_connected_time">Duration: %s</string>
     <string name="hamed_obfs_title">Obfuscation</string>
+    <string name="hamed_obfs_auto">Auto</string>
+    <string name="hamed_obfs_firewall">Firewall</string>
+    <string name="hamed_obfs_balanced">Balanced</string>
+    <string name="hamed_obfs_aggressive">Aggressive</string>
+    <string name="hamed_obfs_off">Off</string>
     <string name="hamed_renew_warp_keys">Renew WARP Keys</string>
     <string name="hamed_settings_aether_title">Aether Settings</string>
     <string name="hamed_settings_aether_summary">Configure all Aether tunnel parameters and features</string>
