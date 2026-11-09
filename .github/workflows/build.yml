@@ -254,10 +254,11 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.1
-        name: Hamed Aether v1.0.1 (Official Signed Release)
+        tag_name: v1.0.2
+        name: Hamed Aether v1.0.2 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.1** (Non-Debug, Keystore Signed)
+          Official Production Release of **Hamed Aether v1.0.2** (Non-Debug, Keystore Signed)
+          - Modular dashboard tiles and customizable layout
           - Pinned bottom bar: Breadcrumb flow [ 🛡 PROTOCOL ] > [ ☊ CHAIN ] > [ ⚡ OBFUSCATION ] permanently fixed at bottom
           - Single bottom/middle connect button (customizable in settings)
           - Real-time oscilloscope traffic waveforms

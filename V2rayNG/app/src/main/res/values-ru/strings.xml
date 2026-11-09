@@ -13,6 +13,50 @@
     <string name="migration_fail">Перенос данных не выполнен!</string>
     <string name="pull_down_to_refresh">Потяните вниз для обновления!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">Общий трафик</string>
+    <string name="hamed_tile_refresh">Обновить</string>
+    <string name="hamed_tile_hide">Скрыть плитку</string>
+    <string name="hamed_tile_premium_title">Сверх Премиум</string>
+    <string name="hamed_tile_theme_title">Цветовая тема</string>
+    <string name="hamed_tile_font_title">Размер шрифта</string>
+    <string name="hamed_tile_edit_hint">Удерживайте плитку для правки:\nтащите для смены порядка, × — скрыть</string>
+    <string name="hamed_tile_layout_done">Готово</string>
+    <string name="hamed_tile_layout_reset">Сбросить порядок</string>
+    <string name="hamed_tile_hidden_title">Скрытые плитки</string>
+    <string name="hamed_fetching_ip">Получение IP…</string>
+    <string name="hamed_not_connected">Нет подключения</string>
+    <string name="hamed_status_subtitle_secure">Менеджер защищённого туннеля</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">Сверх Премиум: строгий скан чистого IP…</string>
+    <string name="hamed_prep_keys">Регистрация ключей WARP…</string>
+    <string name="hamed_prep_scanning">Поиск чистого IP…</string>
+    <string name="hamed_prep_connecting">Подключение…</string>
+    <string name="hamed_prep_failed">Не удалось подключиться</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">Неон</string>
+    <string name="hamed_theme_name_emerald">Изумруд</string>
+    <string name="hamed_theme_name_violet">Фиалка</string>
+    <string name="hamed_theme_name_sunset">Закат</string>
+    <string name="hamed_theme_name_rose">Роза</string>
+    <string name="hamed_font_small">Малый</string>
+    <string name="hamed_font_medium">Средний</string>
+    <string name="hamed_font_large">Большой</string>
+    <string name="hamed_font_xlarge">Очень большой</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">Цветовая тема</string>
+    <string name="hamed_settings_theme_summary">Выберите одну из пяти готовых палитр</string>
+    <string name="hamed_settings_font_title">Размер шрифта</string>
+    <string name="hamed_settings_font_summary">Настройка размера текста дашборда</string>
+    <string name="hamed_settings_tile_layout_title">Сбросить порядок плиток</string>
+    <string name="hamed_settings_tile_layout_summary">Вернуть порядок по умолчанию и показать все плитки</string>
+    <string name="hamed_psiphon_country_title">Страна выхода Psiphon</string>
+    <string name="hamed_carrier_label">Оператор</string>
+    <string name="hamed_exit_label">Выход</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Служба Hamed Aether</string>
     <string name="notification_channel_subscription_updates">Обновления подписок</string>

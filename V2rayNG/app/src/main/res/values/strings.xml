@@ -89,6 +89,73 @@
     <string name="hamed_carrier_label">Carrier</string>
     <string name="hamed_exit_label">Exit</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">Total Transfer</string>
+    <string name="hamed_tile_refresh">Refresh</string>
+    <string name="hamed_tile_hide">Hide tile</string>
+    <string name="hamed_tile_premium_title">Ultra Premium</string>
+    <string name="hamed_tile_theme_title">Color Theme</string>
+    <string name="hamed_tile_font_title">Font Size</string>
+    <string name="hamed_tile_edit_hint">Long-press a tile to edit:\ndrag to reorder, × hides it</string>
+    <string name="hamed_tile_layout_done">Done</string>
+    <string name="hamed_tile_layout_reset">Reset Layout</string>
+    <string name="hamed_tile_hidden_title">Hidden tiles</string>
+    <string name="hamed_fetching_ip">Fetching IP…</string>
+    <string name="hamed_not_connected">Not connected</string>
+    <string name="hamed_status_subtitle_secure">Secure Tunnel Manager</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">Ultra Premium: ironclad clean-IP scan…</string>
+    <string name="hamed_prep_keys">Registering WARP keys…</string>
+    <string name="hamed_prep_scanning">Scanning for a clean IP…</string>
+    <string name="hamed_prep_connecting">Connecting…</string>
+    <string name="hamed_prep_failed">Connection failed</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">Neon</string>
+    <string name="hamed_theme_name_emerald">Emerald</string>
+    <string name="hamed_theme_name_violet">Violet</string>
+    <string name="hamed_theme_name_sunset">Sunset</string>
+    <string name="hamed_theme_name_rose">Rose</string>
+    <string name="hamed_font_small">Small</string>
+    <string name="hamed_font_medium">Medium</string>
+    <string name="hamed_font_large">Large</string>
+    <string name="hamed_font_xlarge">Extra Large</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">Color Theme</string>
+    <string name="hamed_settings_theme_summary">Choose one of the five ready-made palettes</string>
+    <string name="hamed_settings_font_title">Font Size</string>
+    <string name="hamed_settings_font_summary">Adjust the dashboard text size everywhere</string>
+    <string name="hamed_settings_tile_layout_title">Reset Dashboard Layout</string>
+    <string name="hamed_settings_tile_layout_summary">Restore the default tile order and show all tiles</string>
+    <string-array name="hamed_palette_entries" translatable="false">
+        <item>@string/hamed_theme_name_neon</item>
+        <item>@string/hamed_theme_name_emerald</item>
+        <item>@string/hamed_theme_name_violet</item>
+        <item>@string/hamed_theme_name_sunset</item>
+        <item>@string/hamed_theme_name_rose</item>
+    </string-array>
+    <string-array name="hamed_palette_values" translatable="false">
+        <item>neon</item>
+        <item>emerald</item>
+        <item>violet</item>
+        <item>sunset</item>
+        <item>rose</item>
+    </string-array>
+    <string-array name="hamed_font_scale_entries" translatable="false">
+        <item>@string/hamed_font_small</item>
+        <item>@string/hamed_font_medium</item>
+        <item>@string/hamed_font_large</item>
+        <item>@string/hamed_font_xlarge</item>
+    </string-array>
+    <string-array name="hamed_font_scale_values" translatable="false">
+        <item>0.85</item>
+        <item>1.0</item>
+        <item>1.15</item>
+        <item>1.30</item>
+    </string-array>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether service</string>
     <string name="notification_channel_subscription_updates">Subscription updates</string>

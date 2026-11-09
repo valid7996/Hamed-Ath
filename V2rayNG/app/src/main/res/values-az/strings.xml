@@ -13,6 +13,50 @@
     <string name="migration_fail">Məlumatların köçürülməsi uğursuz oldu!</string>
     <string name="pull_down_to_refresh">Yeniləmək üçün aşağı çəkin!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">Ümumi trafik</string>
+    <string name="hamed_tile_refresh">Yenilə</string>
+    <string name="hamed_tile_hide">Plitəni gizlət</string>
+    <string name="hamed_tile_premium_title">Ultra Premium</string>
+    <string name="hamed_tile_theme_title">Rəng teması</string>
+    <string name="hamed_tile_font_title">Şrift ölçüsü</string>
+    <string name="hamed_tile_edit_hint">Redaksiya üçün plitəni basılı tutun:\nçevirmək üçün sürükleyin, × gizlədir</string>
+    <string name="hamed_tile_layout_done">Tamam</string>
+    <string name="hamed_tile_layout_reset">Düzülüşü sıfırla</string>
+    <string name="hamed_tile_hidden_title">Gizli plitələr</string>
+    <string name="hamed_fetching_ip">IP alınır…</string>
+    <string name="hamed_not_connected">Qoşulmayıb</string>
+    <string name="hamed_status_subtitle_secure">Təhlükəsiz tunel idarəçisi</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">Ultra Premium: təmiz IP skanı (ironclad)…</string>
+    <string name="hamed_prep_keys">WARP açarları qeydiyyatdan keçirilir…</string>
+    <string name="hamed_prep_scanning">Təmiz IP skan edilir…</string>
+    <string name="hamed_prep_connecting">Qoşulur…</string>
+    <string name="hamed_prep_failed">Qoşulma alınmadı</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">Neon</string>
+    <string name="hamed_theme_name_emerald">Zümrüd</string>
+    <string name="hamed_theme_name_violet">Bənövşəyi</string>
+    <string name="hamed_theme_name_sunset">Günbatımı</string>
+    <string name="hamed_theme_name_rose">Qızılgül</string>
+    <string name="hamed_font_small">Kiçik</string>
+    <string name="hamed_font_medium">Orta</string>
+    <string name="hamed_font_large">Böyük</string>
+    <string name="hamed_font_xlarge">Çox böyük</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">Rəng teması</string>
+    <string name="hamed_settings_theme_summary">Beş hazır palitradan birini seçin</string>
+    <string name="hamed_settings_font_title">Şrift ölçüsü</string>
+    <string name="hamed_settings_font_summary">Panel mətn ölçüsünü tənzimləyin</string>
+    <string name="hamed_settings_tile_layout_title">Panel düzülüşünü sıfırla</string>
+    <string name="hamed_settings_tile_layout_summary">Varsayılan sıralamanı qaytar və hamısını göstər</string>
+    <string name="hamed_psiphon_country_title">Psiphon çıxış ölkəsi</string>
+    <string name="hamed_carrier_label">Operator</string>
+    <string name="hamed_exit_label">Çıxış</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether xidməti</string>
     <string name="notification_channel_subscription_updates">Abunəlik yenilənmələri</string>

@@ -30,6 +30,8 @@ data class MainUiState(
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
     val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    /** PattNG: bumped on every daemon start failure; a rising count asks the dashboard to shake. */
+    val connectionErrorCount: Long = 0,
     /**
      * PattNG: a move of a profile the storage refused, still to be told, by a number of its own, so that a refusal set
      * again right after the last one was told is told too; null when none, see [MainAction.MoveRefusalShown].

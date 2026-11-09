@@ -87,6 +87,12 @@ object AppConfig {
     /** Hamed Aether: Global defaults and active overrides for Masque and WireGuard */
     const val PREF_AETHER_TRANSPORT = "pref_aether_transport"
     const val PREF_HAMED_BUTTON_POSITION = "pref_hamed_button_position"
+
+    /** Hamed Aether: dashboard tiles, color palette, font scale and ultra-premium connect */
+    const val PREF_HAMED_TILE_LAYOUT = "pref_hamed_tile_layout"
+    const val PREF_HAMED_PALETTE = "pref_hamed_palette"
+    const val PREF_HAMED_FONT_SCALE = "pref_hamed_font_scale"
+    const val PREF_HAMED_ULTRA_PREMIUM = "pref_hamed_ultra_premium"
     const val PREF_AETHER_SCAN_MODE = "pref_aether_scan_mode"
     const val PREF_AETHER_FINAL_MASK = "pref_aether_final_mask"
     const val PREF_AETHER_DIAL_MODE = "pref_aether_dial_mode"

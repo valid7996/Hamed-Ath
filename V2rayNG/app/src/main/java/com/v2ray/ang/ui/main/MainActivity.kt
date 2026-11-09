@@ -190,6 +190,7 @@ class MainActivity : HelperBaseComponentActivity() {
         com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(getString(R.string.aether_keys_missing))
         com.v2ray.ang.handler.HamedAetherManager.prepareAndConnect(
             context = this,
+            ultraPremium = MmkvManager.decodeSettingsBool(AppConfig.PREF_HAMED_ULTRA_PREMIUM, false),
             onStatusChange = { msg ->
                 com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(msg)
             },

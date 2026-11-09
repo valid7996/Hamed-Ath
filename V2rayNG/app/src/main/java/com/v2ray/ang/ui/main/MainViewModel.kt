@@ -186,6 +186,7 @@ class MainViewModel(
                 } else {
                     toastError(R.string.toast_services_failure)
                 }
+                _uiState.update { it.copy(connectionErrorCount = it.connectionErrorCount + 1L) }
                 updateRunningState(false)
             }
 

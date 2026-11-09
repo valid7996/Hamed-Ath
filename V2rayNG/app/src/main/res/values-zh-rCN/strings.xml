@@ -13,6 +13,50 @@
     <string name="migration_fail">数据迁移失败啦!</string>
     <string name="pull_down_to_refresh">请下拉刷新!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">总流量</string>
+    <string name="hamed_tile_refresh">刷新</string>
+    <string name="hamed_tile_hide">隐藏卡片</string>
+    <string name="hamed_tile_premium_title">超级尊享</string>
+    <string name="hamed_tile_theme_title">主题配色</string>
+    <string name="hamed_tile_font_title">字体大小</string>
+    <string name="hamed_tile_edit_hint">长按卡片进入编辑：\n拖动调整顺序，× 隐藏</string>
+    <string name="hamed_tile_layout_done">完成</string>
+    <string name="hamed_tile_layout_reset">重置布局</string>
+    <string name="hamed_tile_hidden_title">已隐藏的卡片</string>
+    <string name="hamed_fetching_ip">正在获取 IP…</string>
+    <string name="hamed_not_connected">未连接</string>
+    <string name="hamed_status_subtitle_secure">安全隧道管理器</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">超级尊享：正在执行终极干净 IP 扫描…</string>
+    <string name="hamed_prep_keys">正在注册 WARP 密钥…</string>
+    <string name="hamed_prep_scanning">正在扫描干净 IP…</string>
+    <string name="hamed_prep_connecting">正在连接…</string>
+    <string name="hamed_prep_failed">连接失败</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">霓虹</string>
+    <string name="hamed_theme_name_emerald">翠绿</string>
+    <string name="hamed_theme_name_violet">紫罗兰</string>
+    <string name="hamed_theme_name_sunset">日落</string>
+    <string name="hamed_theme_name_rose">玫瑰</string>
+    <string name="hamed_font_small">小</string>
+    <string name="hamed_font_medium">中</string>
+    <string name="hamed_font_large">大</string>
+    <string name="hamed_font_xlarge">特大</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">主题配色</string>
+    <string name="hamed_settings_theme_summary">从五个预设配色中选择一个</string>
+    <string name="hamed_settings_font_title">字体大小</string>
+    <string name="hamed_settings_font_summary">全局调整仪表盘文字大小</string>
+    <string name="hamed_settings_tile_layout_title">重置仪表盘布局</string>
+    <string name="hamed_settings_tile_layout_summary">恢复默认卡片顺序并显示全部卡片</string>
+    <string name="hamed_psiphon_country_title">Psiphon 出口国家</string>
+    <string name="hamed_carrier_label">运营商</string>
+    <string name="hamed_exit_label">出口</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether 服务</string>
     <string name="notification_channel_subscription_updates">订阅更新</string>

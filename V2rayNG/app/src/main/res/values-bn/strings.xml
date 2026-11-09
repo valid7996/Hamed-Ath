@@ -13,6 +13,50 @@
     <string name="migration_fail">ডেটা স্থানান্তর ব্যর্থ!</string>
     <string name="pull_down_to_refresh">রিফ্রেশ করতে নিচে টানুন!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">মোট ট্রান্সফার</string>
+    <string name="hamed_tile_refresh">রিফ্রেশ</string>
+    <string name="hamed_tile_hide">টাইল লুকান</string>
+    <string name="hamed_tile_premium_title">আল্ট্রা প্রিমিয়াম</string>
+    <string name="hamed_tile_theme_title">রঙ থিম</string>
+    <string name="hamed_tile_font_title">ফন্ট সাইজ</string>
+    <string name="hamed_tile_edit_hint">সম্পাদনার জন্য টাইল চেপে ধরুন:\nসাজাতে টেনে আনুন, × দিয়ে লুকান</string>
+    <string name="hamed_tile_layout_done">সম্পন্ন</string>
+    <string name="hamed_tile_layout_reset">বিন্যাস রিসেট</string>
+    <string name="hamed_tile_hidden_title">লুকানো টাইল</string>
+    <string name="hamed_fetching_ip">আইপি আনা হচ্ছে…</string>
+    <string name="hamed_not_connected">সংযুক্ত নয়</string>
+    <string name="hamed_status_subtitle_secure">নিরাপদ টানেল ম্যানেজার</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">আল্ট্রা প্রিমিয়াম: আয়রনক্ল্যাড ক্লিন আইপি স্ক্যান…</string>
+    <string name="hamed_prep_keys">WARP কী নিবন্ধন হচ্ছে…</string>
+    <string name="hamed_prep_scanning">ক্লিন আইপি স্ক্যান হচ্ছে…</string>
+    <string name="hamed_prep_connecting">সংযোগ হচ্ছে…</string>
+    <string name="hamed_prep_failed">সংযোগ ব্যর্থ</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">নিয়ন</string>
+    <string name="hamed_theme_name_emerald">এমেরাল্ড</string>
+    <string name="hamed_theme_name_violet">ভায়োলেট</string>
+    <string name="hamed_theme_name_sunset">সানসেট</string>
+    <string name="hamed_theme_name_rose">রোজ</string>
+    <string name="hamed_font_small">ছোট</string>
+    <string name="hamed_font_medium">মাঝারি</string>
+    <string name="hamed_font_large">বড়</string>
+    <string name="hamed_font_xlarge">অনেক বড়</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">রঙ থিম</string>
+    <string name="hamed_settings_theme_summary">পাঁচটি প্রস্তুত প্যালেট থেকে একটি বাছুন</string>
+    <string name="hamed_settings_font_title">ফন্ট সাইজ</string>
+    <string name="hamed_settings_font_summary">সব জায়গায় ড্যাশবোর্ড টেক্সট সাইজ ঠিক করুন</string>
+    <string name="hamed_settings_tile_layout_title">ড্যাশবোর্ড বিন্যাস রিসেট</string>
+    <string name="hamed_settings_tile_layout_summary">ডিফল্ট টাইল অর্ডার ফিরিয়ে আনুন ও সব দেখান</string>
+    <string name="hamed_psiphon_country_title">Psiphon আউটপুট দেশ</string>
+    <string name="hamed_carrier_label">অপারেটর</string>
+    <string name="hamed_exit_label">আউটপুট</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether সার্ভিস</string>
     <string name="notification_channel_subscription_updates">সাবস্ক্রিপশন আপডেট</string>

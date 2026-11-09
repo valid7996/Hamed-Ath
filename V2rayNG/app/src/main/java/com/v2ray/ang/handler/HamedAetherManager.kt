@@ -2,6 +2,7 @@ package com.v2ray.ang.handler
 
 import android.content.Context
 import com.v2ray.ang.AppConfig
+import com.v2ray.ang.R
 import com.v2ray.ang.core.AetherCoreManager
 import com.v2ray.ang.core.AetherExit
 import com.v2ray.ang.core.AetherIdentityManager
@@ -15,6 +16,7 @@ import com.v2ray.ang.enums.AetherKeyKind
 import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.enums.AetherPsiphon
+import com.v2ray.ang.enums.AetherScanMode
 import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.enums.AetherTransport
 import com.v2ray.ang.enums.EConfigType
@@ -274,9 +276,12 @@ object HamedAetherManager {
     /**
      * Prepares keys and endpoints before starting VPN service.
      * Checks if WARP keys exist, registers them if missing, and scans for working endpoints.
+     * With [ultraPremium], any cached endpoint is dropped and the strictest scan mode is forced,
+     * so a fresh clean IP is found for every connect.
      */
     fun prepareAndConnect(
         context: Context,
+        ultraPremium: Boolean = false,
         onStatusChange: (String) -> Unit,
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
@@ -286,6 +291,17 @@ object HamedAetherManager {
             try {
                 val (guid, profile) = getActiveAetherProfile()
                 applySettingsToProfile(profile)
+
+                if (ultraPremium) {
+                    withContext(Dispatchers.Main) {
+                        onStatusChange(context.getString(R.string.hamed_premium_connecting_status))
+                    }
+                    profile.aetherScanMode = AetherScanMode.IRONCLAD.type
+                    // Drop every cached endpoint so a fresh clean scan has to find a working exit.
+                    profile.server = ""
+                    profile.aetherWiwOuter = null
+                    profile.aetherWiwInner = null
+                }
 
                 // Detect mismatch between configured IP family and existing cached endpoint
                 val ipVersion = AetherIpVersion.fromString(profile.aetherIpVersion)
@@ -308,7 +324,7 @@ object HamedAetherManager {
                 val missingFiles = AetherIdentityManager.missing(context, neededFiles)
                 if (missingFiles.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
-                        onStatusChange("در حال ثبت و دریافت کلیدهای WARP...")
+                        onStatusChange(context.getString(R.string.hamed_prep_keys))
                     }
                     val repo = AetherKeysRepository(context)
                     val settings = repo.loadSettings()
@@ -349,7 +365,7 @@ object HamedAetherManager {
 
                 if (needsScan) {
                     withContext(Dispatchers.Main) {
-                        onStatusChange("در حال اسکن و یافتن آی‌پی تمیز...")
+                        onStatusChange(context.getString(R.string.hamed_prep_scanning))
                     }
                     LogUtil.i(TAG, "Scanning clean endpoint for ${profile.aetherProtocol}...")
                     val scanResult = AetherScanner.scan(context, profile) { line ->
@@ -371,7 +387,7 @@ object HamedAetherManager {
                 }
 
                 withContext(Dispatchers.Main) {
-                    onStatusChange("در حال اتصال...")
+                    onStatusChange(context.getString(R.string.hamed_prep_connecting))
                     onSuccess(guid)
                 }
             } catch (ce: CancellationException) {
@@ -383,7 +399,7 @@ object HamedAetherManager {
                 LogUtil.e(TAG, "prepareAndConnect error", e)
                 withContext(Dispatchers.Main) {
                     _preparationStatus.value = null
-                    onError(e.message ?: "خطا در برقراری ارتباط")
+                    onError(e.message ?: context.getString(R.string.hamed_prep_failed))
                 }
             } finally {
                 prepareJob = null

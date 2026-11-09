@@ -13,6 +13,50 @@
     <string name="migration_fail">فشلت عملية ترحيل البيانات!</string>
     <string name="pull_down_to_refresh">اسحب لأسفل للتحديث!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">إجمالي النقل</string>
+    <string name="hamed_tile_refresh">تحديث</string>
+    <string name="hamed_tile_hide">إخفاء البلاطة</string>
+    <string name="hamed_tile_premium_title">فائق بريميوم</string>
+    <string name="hamed_tile_theme_title">سمة الألوان</string>
+    <string name="hamed_tile_font_title">حجم الخط</string>
+    <string name="hamed_tile_edit_hint">اضغط مطولًا على البلاطة للتعديل:\nاسحب لإعادة الترتيب، × للإخفاء</string>
+    <string name="hamed_tile_layout_done">تم</string>
+    <string name="hamed_tile_layout_reset">إعادة الترتيب</string>
+    <string name="hamed_tile_hidden_title">البلاطات المخفية</string>
+    <string name="hamed_fetching_ip">جارٍ الحصول على IP…</string>
+    <string name="hamed_not_connected">غير متصل</string>
+    <string name="hamed_status_subtitle_secure">مدير النفق الآمن</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">فائق بريميوم: مسح صارم لعناوين IP نظيفة…</string>
+    <string name="hamed_prep_keys">جارٍ تسجيل مفاتيح WARP…</string>
+    <string name="hamed_prep_scanning">جارٍ البحث عن IP نظيف…</string>
+    <string name="hamed_prep_connecting">جارٍ الاتصال…</string>
+    <string name="hamed_prep_failed">فشل الاتصال</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">نيون</string>
+    <string name="hamed_theme_name_emerald">زمرّد</string>
+    <string name="hamed_theme_name_violet">بنفسجي</string>
+    <string name="hamed_theme_name_sunset">غروب</string>
+    <string name="hamed_theme_name_rose">وردي</string>
+    <string name="hamed_font_small">صغير</string>
+    <string name="hamed_font_medium">متوسط</string>
+    <string name="hamed_font_large">كبير</string>
+    <string name="hamed_font_xlarge">كبير جدًا</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">سمة الألوان</string>
+    <string name="hamed_settings_theme_summary">اختر واحدة من خمس لوحات جاهزة</string>
+    <string name="hamed_settings_font_title">حجم الخط</string>
+    <string name="hamed_settings_font_summary">ضبط حجم نص لوحة المعلومات إجمالًا</string>
+    <string name="hamed_settings_tile_layout_title">إعادة ترتيب لوحة المعلومات</string>
+    <string name="hamed_settings_tile_layout_summary">استعادة الترتيب الافتراضي وإظهار كل البلاطات</string>
+    <string name="hamed_psiphon_country_title">بلد مخرج Psiphon</string>
+    <string name="hamed_carrier_label">المشغل</string>
+    <string name="hamed_exit_label">مخرج</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">خدمة Hamed Aether</string>
     <string name="notification_channel_subscription_updates">تحديثات الاشتراكات</string>

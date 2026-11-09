@@ -47,6 +47,8 @@ import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.CollapsiblePreferenceGroupHeader
+import com.v2ray.ang.ui.compose.HamedFontScale
+import com.v2ray.ang.ui.compose.HamedPaletteId
 import com.v2ray.ang.ui.compose.HamedThemeColors
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsEditItem
@@ -163,6 +165,12 @@ fun SettingsScreen(
     val scanValues = stringArrayResource(R.array.aether_scan_values).toList()
     val obfuscationEntries = stringArrayResource(R.array.aether_obfuscation_entries).toList()
     val obfuscationValues = stringArrayResource(R.array.aether_obfuscation_values).toList()
+    val paletteEntries = stringArrayResource(R.array.hamed_palette_entries).toList()
+    val paletteValues = stringArrayResource(R.array.hamed_palette_values).toList()
+    val fontEntries = stringArrayResource(R.array.hamed_font_scale_entries).toList()
+    val fontValues = stringArrayResource(R.array.hamed_font_scale_values).toList()
+    val selectedPalette = ThemeManager.palette.collectAsStateWithLifecycle().value
+    val selectedFontScale = ThemeManager.fontScale.collectAsStateWithLifecycle().value
 
     Scaffold(
         containerColor = HamedThemeColors.Background,
@@ -310,6 +318,31 @@ fun SettingsScreen(
                         dynamicColor = it
                         ThemeManager.setDynamicColorEnabled(it)
                     }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_settings_theme_title),
+                    entries = paletteEntries,
+                    values = paletteValues,
+                    selectedValue = selectedPalette.storage,
+                    onSelected = { storage ->
+                        ThemeManager.setPalette(HamedPaletteId.fromStorage(storage))
+                    }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_settings_font_title),
+                    entries = fontEntries,
+                    values = fontValues,
+                    selectedValue = HamedFontScale.entries.firstOrNull { it.scale == selectedFontScale }
+                        ?.storage ?: HamedFontScale.MEDIUM.storage,
+                    onSelected = { storage ->
+                        ThemeManager.setFontScale(HamedFontScale.fromStorage(storage).scale)
+                    }
+                )
+                SettingsMenuItem(
+                    icon = painterResource(R.drawable.ic_restore_24dp),
+                    title = stringResource(R.string.hamed_settings_tile_layout_title),
+                    subtitle = stringResource(R.string.hamed_settings_tile_layout_summary),
+                    onClick = { MmkvManager.encodeSettings(AppConfig.PREF_HAMED_TILE_LAYOUT, "") }
                 )
                 SettingsMenuItem(
                     icon = painterResource(R.drawable.ic_about_24dp),

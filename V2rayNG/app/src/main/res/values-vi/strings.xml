@@ -13,6 +13,50 @@
     <string name="migration_fail">Không thể chuyển dữ liệu!</string>
     <string name="pull_down_to_refresh">Kéo xuống để làm mới!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">Tổng dung lượng</string>
+    <string name="hamed_tile_refresh">Làm mới</string>
+    <string name="hamed_tile_hide">Ẩn ô</string>
+    <string name="hamed_tile_premium_title">Cực Cao Cấp</string>
+    <string name="hamed_tile_theme_title">Giao diện màu</string>
+    <string name="hamed_tile_font_title">Cỡ chữ</string>
+    <string name="hamed_tile_edit_hint">Giữ ô để chỉnh sửa:\nkéo để sắp xếp, × để ẩn</string>
+    <string name="hamed_tile_layout_done">Xong</string>
+    <string name="hamed_tile_layout_reset">Đặt lại bố cục</string>
+    <string name="hamed_tile_hidden_title">Ô đã ẩn</string>
+    <string name="hamed_fetching_ip">Đang tải IP…</string>
+    <string name="hamed_not_connected">Chưa kết nối</string>
+    <string name="hamed_status_subtitle_secure">Trình quản lý đường hầm an toàn</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">Cực Cao Cấp: quét IP sạch nghiêm ngặt…</string>
+    <string name="hamed_prep_keys">Đang đăng ký khóa WARP…</string>
+    <string name="hamed_prep_scanning">Đang quét IP sạch…</string>
+    <string name="hamed_prep_connecting">Đang kết nối…</string>
+    <string name="hamed_prep_failed">Kết nối thất bại</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">Neon</string>
+    <string name="hamed_theme_name_emerald">Ngọc lục bảo</string>
+    <string name="hamed_theme_name_violet">Tím Violet</string>
+    <string name="hamed_theme_name_sunset">Hoàng hôn</string>
+    <string name="hamed_theme_name_rose">Hồng</string>
+    <string name="hamed_font_small">Nhỏ</string>
+    <string name="hamed_font_medium">Vừa</string>
+    <string name="hamed_font_large">Lớn</string>
+    <string name="hamed_font_xlarge">Rất lớn</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">Giao diện màu</string>
+    <string name="hamed_settings_theme_summary">Chọn một trong năm giao diện có sẵn</string>
+    <string name="hamed_settings_font_title">Cỡ chữ</string>
+    <string name="hamed_settings_font_summary">Điều chỉnh cỡ chữ bảng điều khiển</string>
+    <string name="hamed_settings_tile_layout_title">Đặt lại bố cục bảng điều khiển</string>
+    <string name="hamed_settings_tile_layout_summary">Khôi phục thứ tự ô mặc định và hiện tất cả</string>
+    <string name="hamed_psiphon_country_title">Quốc gia đầu ra Psiphon</string>
+    <string name="hamed_carrier_label">Nhà cung cấp</string>
+    <string name="hamed_exit_label">Đầu ra</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Dịch vụ Hamed Aether</string>
     <string name="notification_channel_subscription_updates">Cập nhật gói đăng ký</string>

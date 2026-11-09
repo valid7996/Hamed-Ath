@@ -13,6 +13,50 @@
     <string name="migration_fail">جاگورویی داده یل شکست خرد!</string>
     <string name="pull_down_to_refresh">سی وانۊ کردن، بلگه ن بلم بکشین!</string>
 
+    <!-- Hamed Aether dashboard tiles -->
+    <string name="hamed_tile_total_title">حجم کل ترافیک</string>
+    <string name="hamed_tile_refresh">به‌روزرسانی</string>
+    <string name="hamed_tile_hide">مخفی کردن کاشی</string>
+    <string name="hamed_tile_premium_title">فوق پریمیوم</string>
+    <string name="hamed_tile_theme_title">قالب رنگی</string>
+    <string name="hamed_tile_font_title">اندازه فونت</string>
+    <string name="hamed_tile_edit_hint">برای ویرایش، کاشی را نگه دارید:\nکشیدن جابه‌جا می‌کند، × آن را مخفی می‌کند</string>
+    <string name="hamed_tile_layout_done">تمام</string>
+    <string name="hamed_tile_layout_reset">بازنشانی چیدمان</string>
+    <string name="hamed_tile_hidden_title">کاشی‌های مخفی</string>
+    <string name="hamed_fetching_ip">در حال دریافت آی‌پی…</string>
+    <string name="hamed_not_connected">متصل نیست</string>
+    <string name="hamed_status_subtitle_secure">مدیریت تونل امن</string>
+
+    <!-- Hamed Aether connection preparation -->
+    <string name="hamed_premium_connecting_status">فوق پریمیوم: اسکن سختگیرانهٔ آی‌پی تمیز…</string>
+    <string name="hamed_prep_keys">در حال ثبت کلیدهای WARP…</string>
+    <string name="hamed_prep_scanning">در حال اسکن آی‌پی تمیز…</string>
+    <string name="hamed_prep_connecting">در حال اتصال…</string>
+    <string name="hamed_prep_failed">اتصال ناموفق بود</string>
+
+    <!-- Hamed Aether color palettes and font scale -->
+    <string name="hamed_theme_name_neon">نئون</string>
+    <string name="hamed_theme_name_emerald">زمرد</string>
+    <string name="hamed_theme_name_violet">بنفش</string>
+    <string name="hamed_theme_name_sunset">غروب</string>
+    <string name="hamed_theme_name_rose">رز</string>
+    <string name="hamed_font_small">کوچک</string>
+    <string name="hamed_font_medium">متوسط</string>
+    <string name="hamed_font_large">بزرگ</string>
+    <string name="hamed_font_xlarge">بزرگ‌تر</string>
+
+    <!-- Hamed Aether appearance settings -->
+    <string name="hamed_settings_theme_title">قالب رنگی</string>
+    <string name="hamed_settings_theme_summary">انتخاب یکی از پنج قالب آماده</string>
+    <string name="hamed_settings_font_title">اندازه فونت</string>
+    <string name="hamed_settings_font_summary">تغییر اندازه متن داشبورد در همه بخش‌ها</string>
+    <string name="hamed_settings_tile_layout_title">بازنشانی چیدمان داشبورد</string>
+    <string name="hamed_settings_tile_layout_summary">بازگردانی ترتیب پیش‌فرض کاشی‌ها و نمایش همهٔ آن‌ها</string>
+    <string name="hamed_psiphon_country_title">کشور خروجی سایفون</string>
+    <string name="hamed_carrier_label">اپراتور</string>
+    <string name="hamed_exit_label">خروجی</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">سرویس Hamed Aether</string>
     <string name="notification_channel_subscription_updates">ورۊ کردن اشتراکا</string>
