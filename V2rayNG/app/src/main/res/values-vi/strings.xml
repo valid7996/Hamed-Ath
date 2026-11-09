@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">Nhà cung cấp</string>
     <string name="hamed_exit_label">Đầu ra</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">Giao thức và chuỗi đường hầm</string>
+    <string name="hamed_protocol_title">Giao thức</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp to Warp</string>
+    <string name="hamed_protocol_masque_to_masque">Masque to Masque</string>
+    <string name="hamed_chain_title">Nhà mạng chuỗi</string>
+    <string name="hamed_chain_default">Mặc định (Trực tiếp)</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">Bảng điều khiển kết nối</string>
+    <string name="hamed_test_https">Kiểm tra HTTPS thực tế</string>
+    <string name="hamed_testing_https">Đang kiểm tra kết nối...</string>
+    <string name="hamed_please_connect_first">Vui lòng kết nối trước</string>
+    <string name="hamed_download">Tải xuống</string>
+    <string name="hamed_upload">Tải lên</string>
+    <string name="hamed_ip_flag">Địa chỉ IP và vị trí</string>
+    <string name="hamed_btn_connect">Kết nối</string>
+    <string name="hamed_btn_disconnect">Ngắt kết nối</string>
+    <string name="hamed_btn_connecting">Đang kết nối...</string>
+    <string name="hamed_connected_time">Thời lượng: %s</string>
+    <string name="hamed_obfs_title">Làm rối (Obfuscation)</string>
+    <string name="hamed_obfs_auto">Tự động</string>
+    <string name="hamed_obfs_firewall">Tường lửa</string>
+    <string name="hamed_obfs_balanced">Cân bằng</string>
+    <string name="hamed_obfs_aggressive">Quyết liệt</string>
+    <string name="hamed_obfs_off">Tắt</string>
+    <string name="hamed_renew_warp_keys">Gia hạn khóa WARP</string>
+    <string name="hamed_settings_aether_title">Cài đặt Aether</string>
+    <string name="hamed_settings_aether_summary">Cấu hình tất cả tham số và tính năng đường hầm Aether</string>
+    <string name="hamed_settings_mode_title">Chế độ kết nối</string>
+    <string name="hamed_settings_mode_summary">Chuyển giữa chế độ VPN (TUN) và chế độ Proxy</string>
+    <string name="hamed_settings_per_app">Cài đặt Proxy từng ứng dụng</string>
+    <string name="hamed_section_aether">Cài đặt Aether</string>
+    <string name="hamed_setting_masque_transport">Truyền tải Masque</string>
+    <string name="hamed_setting_scan_mode">Chế độ quét</string>
+    <string name="hamed_setting_obfuscation">Làm rối</string>
+    <string name="hamed_scan_ip_title">Phiên bản IP quét</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">Cả hai</string>
+    <string name="hamed_section_masque">Cài đặt Masque</string>
+    <string name="hamed_masque_transport">Truyền tải Masque</string>
+    <string name="hamed_masque_scan_mode">Chế độ quét Masque</string>
+    <string name="hamed_masque_protocol_variant">Biến thể giao thức Masque</string>
+    <string name="hamed_masque_sni">SNI của Masque</string>
+    <string name="hamed_masque_fragment">Phân mảnh TLS</string>
+    <string name="hamed_masque_fragment_summary">Chia nhỏ gói tin TLS ClientHello để vượt qua kiểm duyệt (Mặc định: Bật)</string>
+    <string name="hamed_masque_fragment_size">Kích thước phân mảnh</string>
+    <string name="hamed_masque_fragment_delay">Độ trễ phân mảnh (ms)</string>
+    <string name="hamed_masque_ech">Client Hello mã hóa (ECH)</string>
+    <string name="hamed_masque_ech_summary">Mã hóa SNI bắt tay TLS bằng Cloudflare ECH</string>
+    <string name="hamed_section_wireguard">Cài đặt WireGuard</string>
+    <string name="hamed_wg_scan_mode">Chế độ quét WireGuard</string>
+    <string name="hamed_wg_obfuscation">Làm rối WireGuard</string>
+    <string name="hamed_wg_renew_keys">Đăng ký / gia hạn khóa WARP</string>
+    <string name="hamed_wg_renew_keys_summary">Gia hạn danh tính Cloudflare và khóa cho đường hầm WireGuard</string>
+    <string name="hamed_section_general">Cài đặt chung và giao diện</string>
+    <string name="hamed_button_position_title">Vị trí nút Kết nối</string>
+    <string-array name="hamed_button_position_entries">
+        <item>Ở giữa (Giữa các thẻ)</item>
+        <item>Trên cùng (Trên các thẻ)</item>
+        <item>Dưới cùng (Dưới các thẻ)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">Hiển thị tốc độ thời gian thực</string>
+    <string name="hamed_general_speed_summary">Hiển thị tốc độ tải xuống và tải lên theo thời gian thực trên thanh trạng thái (Mặc định: Bật)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Dịch vụ Hamed Aether</string>
     <string name="notification_channel_subscription_updates">Cập nhật gói đăng ký</string>

@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">電信業者</string>
     <string name="hamed_exit_label">出口</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">協議與隧道鏈</string>
+    <string name="hamed_protocol_title">協議</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp to Warp</string>
+    <string name="hamed_protocol_masque_to_masque">Masque to Masque</string>
+    <string name="hamed_chain_title">鏈路承載</string>
+    <string name="hamed_chain_default">預設（直連）</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">連線儀表板</string>
+    <string name="hamed_test_https">真實 HTTPS 測試</string>
+    <string name="hamed_testing_https">正在測試連線...</string>
+    <string name="hamed_please_connect_first">請先連線</string>
+    <string name="hamed_download">下載</string>
+    <string name="hamed_upload">上傳</string>
+    <string name="hamed_ip_flag">IP 與位置</string>
+    <string name="hamed_btn_connect">連線</string>
+    <string name="hamed_btn_disconnect">中斷連線</string>
+    <string name="hamed_btn_connecting">正在連線...</string>
+    <string name="hamed_connected_time">持續時長：%s</string>
+    <string name="hamed_obfs_title">混淆</string>
+    <string name="hamed_obfs_auto">自動</string>
+    <string name="hamed_obfs_firewall">防火牆</string>
+    <string name="hamed_obfs_balanced">均衡</string>
+    <string name="hamed_obfs_aggressive">積極</string>
+    <string name="hamed_obfs_off">關閉</string>
+    <string name="hamed_renew_warp_keys">更新 WARP 金鑰</string>
+    <string name="hamed_settings_aether_title">Aether 設定</string>
+    <string name="hamed_settings_aether_summary">設定所有 Aether 通道參數與功能</string>
+    <string name="hamed_settings_mode_title">連線方式</string>
+    <string name="hamed_settings_mode_summary">在 VPN (TUN) 與代理模式之間切換</string>
+    <string name="hamed_settings_per_app">分應用程式代理設定</string>
+    <string name="hamed_section_aether">Aether 設定</string>
+    <string name="hamed_setting_masque_transport">Masque 傳輸</string>
+    <string name="hamed_setting_scan_mode">掃描模式</string>
+    <string name="hamed_setting_obfuscation">混淆</string>
+    <string name="hamed_scan_ip_title">掃描 IP 版本</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">雙棧</string>
+    <string name="hamed_section_masque">Masque 設定</string>
+    <string name="hamed_masque_transport">Masque 傳輸</string>
+    <string name="hamed_masque_scan_mode">Masque 掃描模式</string>
+    <string name="hamed_masque_protocol_variant">Masque 協議變體</string>
+    <string name="hamed_masque_sni">Masque SNI</string>
+    <string name="hamed_masque_fragment">TLS 分片</string>
+    <string name="hamed_masque_fragment_summary">拆分 TLS ClientHello 封包以繞過審查（預設開啟）</string>
+    <string name="hamed_masque_fragment_size">分片大小</string>
+    <string name="hamed_masque_fragment_delay">分片延遲（毫秒）</string>
+    <string name="hamed_masque_ech">加密用戶端問候 (ECH)</string>
+    <string name="hamed_masque_ech_summary">使用 Cloudflare ECH 加密 TLS 交握 SNI</string>
+    <string name="hamed_section_wireguard">WireGuard 設定</string>
+    <string name="hamed_wg_scan_mode">WireGuard 掃描模式</string>
+    <string name="hamed_wg_obfuscation">WireGuard 混淆</string>
+    <string name="hamed_wg_renew_keys">註冊 / 更新 WARP 金鑰</string>
+    <string name="hamed_wg_renew_keys_summary">為 WireGuard 通道更新 Cloudflare 身分與金鑰</string>
+    <string name="hamed_section_general">一般與介面設定</string>
+    <string name="hamed_button_position_title">連線按鈕位置</string>
+    <string-array name="hamed_button_position_entries">
+        <item>置中（卡片之間）</item>
+        <item>頂部（卡片上方）</item>
+        <item>底部（卡片下方）</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">顯示即時速度通知</string>
+    <string name="hamed_general_speed_summary">在狀態列顯示即時下載與上傳速度（預設開啟）</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether 服務</string>
     <string name="notification_channel_subscription_updates">訂閱更新</string>

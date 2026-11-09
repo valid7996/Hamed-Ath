@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">Оператор</string>
     <string name="hamed_exit_label">Выход</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">Протокол и цепочка туннеля</string>
+    <string name="hamed_protocol_title">Протокол</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp to Warp</string>
+    <string name="hamed_protocol_masque_to_masque">Masque to Masque</string>
+    <string name="hamed_chain_title">Носитель цепочки</string>
+    <string name="hamed_chain_default">По умолчанию (напрямую)</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">Панель подключения</string>
+    <string name="hamed_test_https">Реальный тест HTTPS</string>
+    <string name="hamed_testing_https">Проверка подключения...</string>
+    <string name="hamed_please_connect_first">Сначала подключитесь</string>
+    <string name="hamed_download">Загрузка</string>
+    <string name="hamed_upload">Отдача</string>
+    <string name="hamed_ip_flag">IP и местоположение</string>
+    <string name="hamed_btn_connect">Подключить</string>
+    <string name="hamed_btn_disconnect">Отключить</string>
+    <string name="hamed_btn_connecting">Подключение...</string>
+    <string name="hamed_connected_time">Длительность: %s</string>
+    <string name="hamed_obfs_title">Обфускация</string>
+    <string name="hamed_obfs_auto">Авто</string>
+    <string name="hamed_obfs_firewall">Файрвол</string>
+    <string name="hamed_obfs_balanced">Сбалансированный</string>
+    <string name="hamed_obfs_aggressive">Агрессивный</string>
+    <string name="hamed_obfs_off">Выкл</string>
+    <string name="hamed_renew_warp_keys">Обновить ключи WARP</string>
+    <string name="hamed_settings_aether_title">Настройки Aether</string>
+    <string name="hamed_settings_aether_summary">Настройка всех параметров и функций туннеля Aether</string>
+    <string name="hamed_settings_mode_title">Режим подключения</string>
+    <string name="hamed_settings_mode_summary">Переключение между режимом VPN (TUN) и режимом прокси</string>
+    <string name="hamed_settings_per_app">Настройки прокси по приложениям</string>
+    <string name="hamed_section_aether">Настройки Aether</string>
+    <string name="hamed_setting_masque_transport">Транспорт Masque</string>
+    <string name="hamed_setting_scan_mode">Режим сканирования</string>
+    <string name="hamed_setting_obfuscation">Обфускация</string>
+    <string name="hamed_scan_ip_title">Версия IP для сканирования</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">Оба</string>
+    <string name="hamed_section_masque">Настройки Masque</string>
+    <string name="hamed_masque_transport">Транспорт Masque</string>
+    <string name="hamed_masque_scan_mode">Режим сканирования Masque</string>
+    <string name="hamed_masque_protocol_variant">Вариант протокола Masque</string>
+    <string name="hamed_masque_sni">SNI для Masque</string>
+    <string name="hamed_masque_fragment">Фрагментация TLS</string>
+    <string name="hamed_masque_fragment_summary">Разделение пакетов TLS ClientHello для обхода цензуры (по умолчанию: включено)</string>
+    <string name="hamed_masque_fragment_size">Размер фрагмента</string>
+    <string name="hamed_masque_fragment_delay">Задержка фрагмента (мс)</string>
+    <string name="hamed_masque_ech">Encrypted Client Hello (ECH)</string>
+    <string name="hamed_masque_ech_summary">Шифрование SNI рукопожатия TLS через Cloudflare ECH</string>
+    <string name="hamed_section_wireguard">Настройки WireGuard</string>
+    <string name="hamed_wg_scan_mode">Режим сканирования WireGuard</string>
+    <string name="hamed_wg_obfuscation">Обфускация WireGuard</string>
+    <string name="hamed_wg_renew_keys">Зарегистрировать / обновить ключи WARP</string>
+    <string name="hamed_wg_renew_keys_summary">Обновление идентификатора и ключей Cloudflare для туннеля WireGuard</string>
+    <string name="hamed_section_general">Общие настройки и интерфейс</string>
+    <string name="hamed_button_position_title">Положение кнопки подключения</string>
+    <string-array name="hamed_button_position_entries">
+        <item>Посередине (между карточками)</item>
+        <item>Сверху (над карточками)</item>
+        <item>Снизу (под карточками)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">Показывать скорость в реальном времени</string>
+    <string name="hamed_general_speed_summary">Отображение скорости загрузки и отдачи в строке состояния (по умолчанию: вкл.)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Служба Hamed Aether</string>
     <string name="notification_channel_subscription_updates">Обновления подписок</string>

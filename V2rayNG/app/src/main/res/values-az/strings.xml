@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">Operator</string>
     <string name="hamed_exit_label">Çıxış</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">Protokol və Tunel Zənciri</string>
+    <string name="hamed_protocol_title">Protokol</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp-dan Warp-a</string>
+    <string name="hamed_protocol_masque_to_masque">Masque-dan Masque-a</string>
+    <string name="hamed_chain_title">Zəncir daşıyıcısı</string>
+    <string name="hamed_chain_default">Susmaya görə (Birbaşa)</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">Bağlantı paneli</string>
+    <string name="hamed_test_https">Real HTTPS testi</string>
+    <string name="hamed_testing_https">Bağlantı yoxlanılır...</string>
+    <string name="hamed_please_connect_first">Zəhmət olmasa əvvəlcə qoşulun</string>
+    <string name="hamed_download">Yüklənmə</string>
+    <string name="hamed_upload">Göndərmə</string>
+    <string name="hamed_ip_flag">İP və yer</string>
+    <string name="hamed_btn_connect">Qoşulmaq</string>
+    <string name="hamed_btn_disconnect">Ayırmaq</string>
+    <string name="hamed_btn_connecting">Qoşulur...</string>
+    <string name="hamed_connected_time">Müddət: %s</string>
+    <string name="hamed_obfs_title">Obfuskasiya</string>
+    <string name="hamed_obfs_auto">Avtomatik</string>
+    <string name="hamed_obfs_firewall">Fayervol</string>
+    <string name="hamed_obfs_balanced">Balanslaşdırılmış</string>
+    <string name="hamed_obfs_aggressive">Aqressiv</string>
+    <string name="hamed_obfs_off">Deaktiv</string>
+    <string name="hamed_renew_warp_keys">WARP açarlarını yenilə</string>
+    <string name="hamed_settings_aether_title">Aether parametrləri</string>
+    <string name="hamed_settings_aether_summary">Bütün Aether tunel parametrlərini və funksiyalarını konfiqurasiya etmək</string>
+    <string name="hamed_settings_mode_title">Bağlantı rejimi</string>
+    <string name="hamed_settings_mode_summary">VPN (TUN) və Proksi rejimləri arasında keçid</string>
+    <string name="hamed_settings_per_app">Tətbiq üzrə proksi parametrləri</string>
+    <string name="hamed_section_aether">Aether parametrləri</string>
+    <string name="hamed_setting_masque_transport">Masque Transport</string>
+    <string name="hamed_setting_scan_mode">Skan rejimi</string>
+    <string name="hamed_setting_obfuscation">Obfuskasiya</string>
+    <string name="hamed_scan_ip_title">Skan İP versiyası</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">Hər ikisi</string>
+    <string name="hamed_section_masque">Masque parametrləri</string>
+    <string name="hamed_masque_transport">Masque transportu</string>
+    <string name="hamed_masque_scan_mode">Masque skan rejimi</string>
+    <string name="hamed_masque_protocol_variant">Masque protokol variantı</string>
+    <string name="hamed_masque_sni">Masque SNI</string>
+    <string name="hamed_masque_fragment">TLS fraqmentasiyası</string>
+    <string name="hamed_masque_fragment_summary">Ssenzordan yan ötmək üçün TLS ClientHello paketlərini bölmək (Susmaya görə: aktiv)</string>
+    <string name="hamed_masque_fragment_size">Fraqment ölçüsü</string>
+    <string name="hamed_masque_fragment_delay">Fraqment gecikməsi (ms)</string>
+    <string name="hamed_masque_ech">Şifrələnmiş Client Hello (ECH)</string>
+    <string name="hamed_masque_ech_summary">TLS əl sıxma SNI-nı Cloudflare ECH ilə şifrələmək</string>
+    <string name="hamed_section_wireguard">WireGuard parametrləri</string>
+    <string name="hamed_wg_scan_mode">WireGuard skan rejimi</string>
+    <string name="hamed_wg_obfuscation">WireGuard obfuskasiyası</string>
+    <string name="hamed_wg_renew_keys">WARP açarlarını yaz / yenilə</string>
+    <string name="hamed_wg_renew_keys_summary">WireGuard tuneli üçün Cloudflare kimliyini və açarları yeniləmək</string>
+    <string name="hamed_section_general">Ümumi və interfeys parametrləri</string>
+    <string name="hamed_button_position_title">Bağlantı düyməsinin yeri</string>
+    <string-array name="hamed_button_position_entries">
+        <item>Orta (kartlar arasında)</item>
+        <item>Yuxarı (kartların üstündə)</item>
+        <item>Aşağı (kartların altında)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">Real vaxt sürət bildirişi</string>
+    <string name="hamed_general_speed_summary">Vəziyyət panelində yüklənmə və göndərmə sürətlərini göstərmək (Susmaya görə: aktiv)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether xidməti</string>
     <string name="notification_channel_subscription_updates">Abunəlik yenilənmələri</string>

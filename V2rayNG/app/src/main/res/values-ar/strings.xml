@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">المشغل</string>
     <string name="hamed_exit_label">مخرج</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">البروتوكول وسلسلة النفق</string>
+    <string name="hamed_protocol_title">البروتوكول</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp إلى Warp</string>
+    <string name="hamed_protocol_masque_to_masque">Masque إلى Masque</string>
+    <string name="hamed_chain_title">حامل السلسلة</string>
+    <string name="hamed_chain_default">الافتراضي (مباشر)</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">لوحة الاتصال</string>
+    <string name="hamed_test_https">اختبار HTTPS حقيقي</string>
+    <string name="hamed_testing_https">جارٍ اختبار الاتصال...</string>
+    <string name="hamed_please_connect_first">يرجى الاتصال أولًا</string>
+    <string name="hamed_download">التنزيل</string>
+    <string name="hamed_upload">الإرسال</string>
+    <string name="hamed_ip_flag">عنوان IP والموقع</string>
+    <string name="hamed_btn_connect">اتصال</string>
+    <string name="hamed_btn_disconnect">قطع الاتصال</string>
+    <string name="hamed_btn_connecting">جارٍ الاتصال...</string>
+    <string name="hamed_connected_time">المدة: %s</string>
+    <string name="hamed_obfs_title">التمويه</string>
+    <string name="hamed_obfs_auto">تلقائي</string>
+    <string name="hamed_obfs_firewall">جدار حماية</string>
+    <string name="hamed_obfs_balanced">متوازن</string>
+    <string name="hamed_obfs_aggressive">عدواني</string>
+    <string name="hamed_obfs_off">إيقاف</string>
+    <string name="hamed_renew_warp_keys">تجديد مفاتيح WARP</string>
+    <string name="hamed_settings_aether_title">إعدادات Aether</string>
+    <string name="hamed_settings_aether_summary">تهيئة جميع معاملات وميزات نفق Aether</string>
+    <string name="hamed_settings_mode_title">وضع الاتصال</string>
+    <string name="hamed_settings_mode_summary">التبديل بين نمط VPN (TUN) ونمط الوكيل</string>
+    <string name="hamed_settings_per_app">إعدادات الوكيل لكل تطبيق</string>
+    <string name="hamed_section_aether">إعدادات Aether</string>
+    <string name="hamed_setting_masque_transport">نقل Masque</string>
+    <string name="hamed_setting_scan_mode">وضع الفحص</string>
+    <string name="hamed_setting_obfuscation">التمويه</string>
+    <string name="hamed_scan_ip_title">نسخة IP للفحص</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">كليهما</string>
+    <string name="hamed_section_masque">إعدادات Masque</string>
+    <string name="hamed_masque_transport">نقل Masque</string>
+    <string name="hamed_masque_scan_mode">وضع فحص Masque</string>
+    <string name="hamed_masque_protocol_variant">نوع بروتوكول Masque</string>
+    <string name="hamed_masque_sni">SNI في Masque</string>
+    <string name="hamed_masque_fragment">تقطيع حزم TLS (Fragment)</string>
+    <string name="hamed_masque_fragment_summary">تقسيم حزم ClientHello لتجاوز الحجب (افتراضيًا مفعّل)</string>
+    <string name="hamed_masque_fragment_size">حجم الأجزاء</string>
+    <string name="hamed_masque_fragment_delay">تأخير الأجزاء (ميلي ثانية)</string>
+    <string name="hamed_masque_ech">ترحيب العميل المشفر (ECH)</string>
+    <string name="hamed_masque_ech_summary">تشفير SNI لمصافحة TLS بواسطة Cloudflare ECH</string>
+    <string name="hamed_section_wireguard">إعدادات WireGuard</string>
+    <string name="hamed_wg_scan_mode">وضع فحص WireGuard</string>
+    <string name="hamed_wg_obfuscation">تمويه WireGuard</string>
+    <string name="hamed_wg_renew_keys">تسجيل / تجديد مفاتيح WARP</string>
+    <string name="hamed_wg_renew_keys_summary">تجديد هوية Cloudflare والمفاتيح لنفق WireGuard</string>
+    <string name="hamed_section_general">إعدادات عامة والواجهة</string>
+    <string name="hamed_button_position_title">موضع زر الاتصال</string>
+    <string-array name="hamed_button_position_entries">
+        <item>وسط (بين البطاقات)</item>
+        <item>أعلى (فوق البطاقات)</item>
+        <item>أسفل (تحت البطاقات)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">عرض السرعة اللحظية في الإشعارات</string>
+    <string name="hamed_general_speed_summary">عرض سرعات التنزيل والإرسال لحظيًا في شريط الحالة (افتراضيًا مفعّل)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">خدمة Hamed Aether</string>
     <string name="notification_channel_subscription_updates">تحديثات الاشتراكات</string>

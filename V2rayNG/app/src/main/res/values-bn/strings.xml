@@ -57,6 +57,81 @@
     <string name="hamed_carrier_label">অপারেটর</string>
     <string name="hamed_exit_label">আউটপুট</string>
 
+    <!-- Hamed Aether protocol, chain and dashboard -->
+    <string name="hamed_aether_title">Hamed Aether</string>
+    <string name="hamed_tile_protocol_title">প্রোটোকল ও টানেল চেইন</string>
+    <string name="hamed_protocol_title">প্রোটোকল</string>
+    <string name="hamed_protocol_wasque">Wasque (MASQUE)</string>
+    <string name="hamed_protocol_warp">WARP</string>
+    <string name="hamed_protocol_wireguard">WireGuard</string>
+    <string name="hamed_protocol_warp_to_warp">Warp to Warp</string>
+    <string name="hamed_protocol_masque_to_masque">Masque to Masque</string>
+    <string name="hamed_chain_title">চেইন ক্যারিয়ার</string>
+    <string name="hamed_chain_default">ডিফল্ট (সরাসরি)</string>
+    <string name="hamed_chain_psiphon">Psiphon</string>
+    <string name="hamed_chain_tor">Tor</string>
+    <string name="hamed_tile_dashboard_title">সংযোগ ড্যাশবোর্ড</string>
+    <string name="hamed_test_https">প্রকৃত HTTPS পরীক্ষা</string>
+    <string name="hamed_testing_https">সংযোগ পরীক্ষা চলছে...</string>
+    <string name="hamed_please_connect_first">প্রথমে সংযোগ করুন</string>
+    <string name="hamed_download">ডাউনলোড</string>
+    <string name="hamed_upload">আপলোড</string>
+    <string name="hamed_ip_flag">আইপি ও অবস্থান</string>
+    <string name="hamed_btn_connect">সংযোগ</string>
+    <string name="hamed_btn_disconnect">সংযোগ বিচ্ছিন্ন</string>
+    <string name="hamed_btn_connecting">সংযোগ হচ্ছে...</string>
+    <string name="hamed_connected_time">সময়কাল: %s</string>
+    <string name="hamed_obfs_title">অবফাস্কেশন</string>
+    <string name="hamed_obfs_auto">স্বয়ংক্রিয়</string>
+    <string name="hamed_obfs_firewall">ফায়ারওয়াল</string>
+    <string name="hamed_obfs_balanced">ভারসাম্যপূর্ণ</string>
+    <string name="hamed_obfs_aggressive">আক্রমণাত্মক</string>
+    <string name="hamed_obfs_off">বন্ধ</string>
+    <string name="hamed_renew_warp_keys">WARP কী নবায়ন</string>
+    <string name="hamed_settings_aether_title">Aether সেটিংস</string>
+    <string name="hamed_settings_aether_summary">সমস্ত Aether টানেল প্যারামিটার ও ফিচার কনফিগার করুন</string>
+    <string name="hamed_settings_mode_title">সংযোগ মোড</string>
+    <string name="hamed_settings_mode_summary">VPN (TUN) এবং প্রক্সি মোডের মধ্যে পরিবর্তন</string>
+    <string name="hamed_settings_per_app">প্রতি-অ্যাপ প্রক্সি সেটিংস</string>
+    <string name="hamed_section_aether">Aether সেটিংস</string>
+    <string name="hamed_setting_masque_transport">Masque Transport</string>
+    <string name="hamed_setting_scan_mode">স্ক্যান মোড</string>
+    <string name="hamed_setting_obfuscation">অবফাস্কেশন</string>
+    <string name="hamed_scan_ip_title">স্ক্যান আইপি সংস্করণ</string>
+    <string name="hamed_scan_ip_v4">IPv4</string>
+    <string name="hamed_scan_ip_v6">IPv6</string>
+    <string name="hamed_scan_ip_dual">উভয়ই</string>
+    <string name="hamed_section_masque">Masque সেটিংস</string>
+    <string name="hamed_masque_transport">Masque ট্রান্সপোর্ট</string>
+    <string name="hamed_masque_scan_mode">Masque স্ক্যান মোড</string>
+    <string name="hamed_masque_protocol_variant">Masque প্রোটোকল ভ্যারিয়েন্ট</string>
+    <string name="hamed_masque_sni">Masque SNI</string>
+    <string name="hamed_masque_fragment">TLS ফ্র্যাগমেন্টেশন</string>
+    <string name="hamed_masque_fragment_summary">সেন্সরশিপ এড়াতে TLS ClientHello প্যাকেট বিভক্ত করুন (ডিফল্ট: সক্রিয়)</string>
+    <string name="hamed_masque_fragment_size">ফ্র্যাগমেন্ট আকার</string>
+    <string name="hamed_masque_fragment_delay">ফ্র্যাগমেন্ট বিলম্ব (মিলিসেকেন্ড)</string>
+    <string name="hamed_masque_ech">এনক্রিপ্টেড ক্লায়েন্ট হ্যালো (ECH)</string>
+    <string name="hamed_masque_ech_summary">Cloudflare ECH দিয়ে TLS হ্যান্ডশেক SNI এনক্রিপ্ট করুন</string>
+    <string name="hamed_section_wireguard">WireGuard সেটিংস</string>
+    <string name="hamed_wg_scan_mode">WireGuard স্ক্যান মোড</string>
+    <string name="hamed_wg_obfuscation">WireGuard অবফাস্কেশন</string>
+    <string name="hamed_wg_renew_keys">WARP কী নিবন্ধন / নবায়ন</string>
+    <string name="hamed_wg_renew_keys_summary">WireGuard টানেলের জন্য Cloudflare আইডেন্টিটি ও কী নবায়ন করুন</string>
+    <string name="hamed_section_general">সাধারণ ও UI সেটিংস</string>
+    <string name="hamed_button_position_title">সংযোগ বোতামের অবস্থান</string>
+    <string-array name="hamed_button_position_entries">
+        <item>মাঝখানে (কার্ডগুলির মাঝে)</item>
+        <item>উপরে (কার্ডের উপর)</item>
+        <item>নিচে (কার্ডের নিচে)</item>
+    </string-array>
+    <string-array name="hamed_button_position_values">
+        <item>middle</item>
+        <item>top</item>
+        <item>bottom</item>
+    </string-array>
+    <string name="hamed_general_speed">রিয়েল-টাইম গতির বিজ্ঞপ্তি</string>
+    <string name="hamed_general_speed_summary">স্ট্যাটাস বারে রিয়েল-টাইম ডাউনলোড ও আপলোড গতি দেখান (ডিফল্ট: চালু)</string>
+
     <!-- Notifications -->
     <string name="notification_channel_service">Hamed Aether সার্ভিস</string>
     <string name="notification_channel_subscription_updates">সাবস্ক্রিপশন আপডেট</string>
