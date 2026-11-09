@@ -78,6 +78,14 @@
     <string name="hamed_upload">آپلود</string>
     <string name="hamed_ip_flag">آی‌پی و کشور</string>
     <string name="hamed_btn_connect">اتصال</string>
+    <string name="hamed_current_server_label">سرور فعلی</string>
+    <string name="hamed_tap_to_disconnect">بزنید تا قطع شود</string>
+    <string name="hamed_tap_to_connect">برای اتصال ضربه بزنید</string>
+    <string name="hamed_status_connected">متصل شد</string>
+    <string name="hamed_status_ready">آماده اتصال</string>
+    <string name="hamed_speed_test">تست سرعت</string>
+    <string name="hamed_session_traffic">حجم این اتصال</string>
+    <string name="hamed_connection_duration">مدت اتصال</string>
     <string name="hamed_btn_disconnect">قطع اتصال</string>
     <string name="hamed_btn_connecting">در حال اتصال...</string>
     <string name="hamed_connected_time">مدت اتصال: %s</string>

@@ -254,16 +254,16 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.2
-        name: Hamed Aether v1.0.2 (Official Signed Release)
+        tag_name: v1.0.3
+        name: Hamed Aether v1.0.3 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.2** (Non-Debug, Keystore Signed)
-          - Modular dashboard tiles and customizable layout
-          - Pinned bottom bar: Breadcrumb flow [ 🛡 PROTOCOL ] > [ ☊ CHAIN ] > [ ⚡ OBFUSCATION ] permanently fixed at bottom
-          - Single bottom/middle connect button (customizable in settings)
-          - Real-time oscilloscope traffic waveforms
-          - Fast IP & Country flag detection (with Cloudflare + Psiphon exit nodes)
-          - Streamlined Settings (pure Aether Masque & WireGuard options)
+          Official Production Release of **Hamed Aether v1.0.3** (Non-Debug, Keystore Signed)
+          - New ZedSecure-style 3-Tier Layout:
+            1. Top: Protocol & Server Selection Card (purple gradient, flag, IP pill, Aether core badge, latency ms, expandable options)
+            2. Middle: Wide Hero Connect Banner (lime green connected state with dark power button badge, bold elapsed time, subtext)
+            3. Bottom: Connection & IP Dashboard (Upload & Download animated waveform curves, session traffic, ping test, IP & Location card)
+          - Pinned bottom breadcrumb bar permanently fixed at bottom
+          - Fast IP & Country flag detection (Cloudflare + Psiphon exit nodes)
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         fail_on_unmatched_files: true
         prerelease: false

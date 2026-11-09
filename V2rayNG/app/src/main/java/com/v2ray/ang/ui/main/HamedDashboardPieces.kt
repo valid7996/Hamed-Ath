@@ -11,6 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -191,7 +192,7 @@ fun HamedHeroConnect(
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         HamedPremiumChip(
             enabled = premiumEnabled,
@@ -211,13 +212,6 @@ fun HamedHeroConnect(
             }
         }
 
-        val buttonGradient = when {
-            premiumEnabled && !isConnecting && !isActuallyConnected -> HamedThemeColors.PremiumGradient
-            isConnecting -> HamedThemeColors.ConnectingGradient
-            isActuallyConnected -> HamedThemeColors.SuccessGradient
-            else -> HamedThemeColors.PrimaryGradient
-        }
-
         val interactionSource = remember { MutableInteractionSource() }
         val isPressed by interactionSource.collectIsPressedAsState()
         val pressScale by animateFloatAsState(
@@ -225,61 +219,138 @@ fun HamedHeroConnect(
             label = "hamedHeroPress"
         )
 
+        val bannerBackground = when {
+            isActuallyConnected -> Brush.horizontalGradient(
+                listOf(Color(0xFFB8F438), Color(0xFF9EE824))
+            )
+            isConnecting -> HamedThemeColors.ConnectingGradient
+            premiumEnabled -> HamedThemeColors.PremiumGradient
+            else -> Brush.horizontalGradient(
+                listOf(Color(0xFF1B2030), Color(0xFF151926))
+            )
+        }
+
         Surface(
             onClick = onToggle,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
+                .height(96.dp)
                 .graphicsLayer {
                     scaleX = pressScale
                     scaleY = pressScale
                     rotationZ = rotation.value
                 },
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(26.dp),
+            border = if (!isActuallyConnected && !isConnecting) {
+                BorderStroke(1.5.dp, HamedThemeColors.PrimaryBlue.copy(alpha = 0.5f))
+            } else null,
             interactionSource = interactionSource,
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(buttonGradient),
-                contentAlignment = Alignment.Center
+                    .background(bannerBackground)
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Row(
+                    modifier = Modifier.fillMaxSize(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    if (isConnecting) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.5.dp
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_power_24dp),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
+                    // Left: Power button icon badge
+                    val badgeBg = when {
+                        isActuallyConnected -> Color(0xFF162002)
+                        isConnecting -> Color(0x33FFFFFF)
+                        else -> HamedThemeColors.InnerCard
+                    }
+                    val iconTint = when {
+                        isActuallyConnected -> Color(0xFFB8F438)
+                        else -> Color.White
                     }
 
-                    val buttonText = when {
-                        preparationStatus != null -> preparationStatus
-                        isConnecting -> stringResource(R.string.hamed_btn_connecting)
-                        isActuallyConnected -> stringResource(R.string.hamed_btn_disconnect) +
-                                "  (" + formatHamedElapsed(elapsedSeconds) + ")"
-                        else -> stringResource(R.string.hamed_btn_connect)
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(badgeBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isConnecting) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(26.dp),
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_power_24dp),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
 
-                    Text(
-                        text = buttonText,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = Color.White
-                    )
+                    // Right: Status label, Timer digits, Subtext
+                    val primaryTextColor = when {
+                        isActuallyConnected -> Color(0xFF162002)
+                        else -> Color.White
+                    }
+                    val secondaryTextColor = when {
+                        isActuallyConnected -> Color(0xFF2C3E08)
+                        else -> HamedThemeColors.TextSecondary
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        val statusLabel = when {
+                            isActuallyConnected -> stringResource(R.string.hamed_status_connected)
+                            isConnecting -> preparationStatus ?: stringResource(R.string.hamed_btn_connecting)
+                            else -> stringResource(R.string.hamed_status_ready)
+                        }
+
+                        Text(
+                            text = statusLabel,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            ),
+                            color = primaryTextColor
+                        )
+
+                        val timerDigits = if (isActuallyConnected) {
+                            formatHamedElapsed(elapsedSeconds)
+                        } else if (isConnecting) {
+                            "..."
+                        } else {
+                            "00:00"
+                        }
+
+                        Text(
+                            text = timerDigits,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 32.sp
+                            ),
+                            color = primaryTextColor
+                        )
+
+                        val subText = when {
+                            isActuallyConnected -> stringResource(R.string.hamed_tap_to_disconnect)
+                            isConnecting -> stringResource(R.string.hamed_btn_disconnect)
+                            else -> stringResource(R.string.hamed_tap_to_connect)
+                        }
+
+                        Text(
+                            text = subText,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = secondaryTextColor
+                        )
+                    }
                 }
             }
         }
@@ -1360,6 +1431,466 @@ private fun BreadcrumbChip(iconRes: Int, label: String) {
                     fontSize = 11.sp
                 ),
                 color = HamedThemeColors.TextPrimary
+            )
+        }
+    }
+}
+
+// ============================================================
+// Top Protocol & Server Selection Card (ZedSecure style)
+// ============================================================
+
+@Composable
+fun HamedServerCard(
+    tileContext: HamedTileContext,
+    onTestPing: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val connectionInfo = tileContext.connectionInfo
+
+    val protoName = when (tileContext.activeProtocol) {
+        AetherProtocol.MASQUE -> "Wasque (MASQUE)"
+        AetherProtocol.WIREGUARD -> "WireGuard"
+        AetherProtocol.WG_OVER_MASQUE -> "WARP to WARP"
+        AetherProtocol.MIM -> "MASQUE to MASQUE"
+        AetherProtocol.GOOL -> "WARP"
+    }
+
+    val chainSubtext = when (tileContext.activeChain) {
+        HamedChainType.PSIPHON -> if (tileContext.activePsiphonRegion.isNotBlank()) "Psiphon (${tileContext.activePsiphonRegion.uppercase()})" else "Psiphon"
+        HamedChainType.TOR -> "Tor"
+        HamedChainType.DEFAULT -> "Direct"
+    }
+
+    val obfsSubtext = tileContext.activeObfs.name.lowercase().replaceFirstChar { it.uppercase() }
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = Color(0xFF24153B),
+        border = BorderStroke(1.dp, Color(0xFF4C2A7D).copy(alpha = 0.6f)),
+        shadowElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF2C194D),
+                            Color(0xFF1B1233),
+                        )
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            // Header row: Chevron (left), Info (center), Flag & "سرور فعلی" (right)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: Chevron button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x33FFFFFF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val chevronRotation by animateFloatAsState(
+                        targetValue = if (expanded) 90f else 0f,
+                        label = "chevronRot"
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrow_back_24dp),
+                        contentDescription = "Expand",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .graphicsLayer { rotationZ = chevronRotation }
+                    )
+                }
+
+                // Middle: Server / Protocol Name and Subtext
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = stringResource(R.string.hamed_current_server_label),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Color(0xFFC0AEE6)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = protoName,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        ),
+                        color = Color.White
+                    )
+                    Text(
+                        text = "$chainSubtext • $obfsSubtext",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Color(0xFFA595C7)
+                    )
+                }
+
+                // Right: Country Flag
+                Surface(
+                    modifier = Modifier.size(46.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0x33000000),
+                    border = BorderStroke(1.dp, Color(0x33FFFFFF))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        if (connectionInfo.flagEmoji != "🌐") {
+                            Text(text = connectionInfo.flagEmoji, fontSize = 26.sp)
+                        } else {
+                            Text(text = "🛡️", fontSize = 24.sp)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Badges row: IP Pill, Aether Pill, Latency Ping Pill
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // IP badge
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0x40000000),
+                    border = BorderStroke(0.8.dp, Color(0x22FFFFFF))
+                ) {
+                    Text(
+                        text = if (connectionInfo.ip != "---") connectionInfo.ip else "---.---.---.---",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp
+                        ),
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+
+                // Aether / Core Badge
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFB5F43C)
+                ) {
+                    Text(
+                        text = "Aether",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        ),
+                        color = Color(0xFF141F04),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Latency Ping Badge
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0x40000000),
+                    border = BorderStroke(0.8.dp, Color(0x22FFFFFF)),
+                    modifier = Modifier.clickable { onTestPing() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = if (connectionInfo.pingMs >= 0) "${connectionInfo.pingMs} ms" else "--- ms",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp
+                            ),
+                            color = Color.White
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(if (connectionInfo.pingMs >= 0) Color(0xFF4CAF50) else Color(0xFF888888))
+                        )
+                    }
+                }
+            }
+
+            // Expanded settings section
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.6.dp)
+                            .background(Color(0x33FFFFFF))
+                    )
+
+                    HamedProtocolTile(tileContext = tileContext)
+                    HamedChainTile(tileContext = tileContext)
+                    HamedObfsTile(tileContext = tileContext)
+                    HamedIpVersionTile(tileContext = tileContext)
+                    HamedWarpKeysTile(tileContext = tileContext)
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// Bottom Connection & IP Dashboard
+// ============================================================
+
+@Composable
+fun HamedConnectionDashboardBottom(
+    tileContext: HamedTileContext,
+    onTestPing: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Row 1: Upload & Download cards side-by-side
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Upload Card
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(20.dp),
+                color = HamedThemeColors.CardBackground,
+                border = BorderStroke(1.dp, HamedThemeColors.Border)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.hamed_upload),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = HamedThemeColors.TextSecondary
+                        )
+                        Text(text = "↑", color = HamedThemeColors.SecondaryPurple, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        text = tileContext.trafficState.uploadSpeedStr,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 18.sp
+                        ),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                    Text(
+                        text = tileContext.trafficState.totalUploadStr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = HamedThemeColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HamedWaveformGraph(
+                        graphColor = HamedThemeColors.SecondaryPurple,
+                        isActive = tileContext.isActuallyConnected,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(34.dp)
+                    )
+                }
+            }
+
+            // Download Card
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(20.dp),
+                color = HamedThemeColors.CardBackground,
+                border = BorderStroke(1.dp, HamedThemeColors.Border)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.hamed_download),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = HamedThemeColors.TextSecondary
+                        )
+                        Text(text = "↓", color = HamedThemeColors.AccentCyan, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        text = tileContext.trafficState.downloadSpeedStr,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 18.sp
+                        ),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                    Text(
+                        text = tileContext.trafficState.totalDownloadStr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = HamedThemeColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HamedWaveformGraph(
+                        graphColor = HamedThemeColors.AccentCyan,
+                        isActive = tileContext.isActuallyConnected,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(34.dp)
+                    )
+                }
+            }
+        }
+
+        // Row 2: Session traffic & duration tiles
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Session traffic
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(18.dp),
+                color = HamedThemeColors.CardBackground,
+                border = BorderStroke(1.dp, HamedThemeColors.Border)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.hamed_session_traffic),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = HamedThemeColors.TextSecondary
+                    )
+                    val totalSessionBytes = tileContext.trafficState.totalDownload + tileContext.trafficState.totalUpload
+                    val sessionStr = if (totalSessionBytes > 0) {
+                        HamedAetherManager.formatDataSize(totalSessionBytes)
+                    } else {
+                        "0 B"
+                    }
+                    Text(
+                        text = sessionStr,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp
+                        ),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                }
+            }
+
+            // Duration
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(18.dp),
+                color = HamedThemeColors.CardBackground,
+                border = BorderStroke(1.dp, HamedThemeColors.Border)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.hamed_connection_duration),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = HamedThemeColors.TextSecondary
+                    )
+                    Text(
+                        text = formatHamedElapsed(tileContext.elapsedSeconds),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp
+                        ),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                }
+            }
+        }
+
+        // Row 3: Action Buttons / Speed Test
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Surface(
+                onClick = onTestPing,
+                shape = RoundedCornerShape(14.dp),
+                color = HamedThemeColors.CardBackground,
+                border = BorderStroke(1.dp, HamedThemeColors.Border)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.hamed_speed_test),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = HamedThemeColors.TextPrimary
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.ic_refresh_24dp),
+                        contentDescription = null,
+                        tint = HamedThemeColors.AccentCyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+
+        // Row 4: IP & Location Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = HamedThemeColors.CardBackground,
+            border = BorderStroke(1.dp, HamedThemeColors.Border)
+        ) {
+            HamedIpInfoTile(
+                tileContext = tileContext,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             )
         }
     }

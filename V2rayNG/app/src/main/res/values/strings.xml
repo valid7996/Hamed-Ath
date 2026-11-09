@@ -34,6 +34,14 @@
     <string name="hamed_upload">Upload</string>
     <string name="hamed_ip_flag">IP &amp; Location</string>
     <string name="hamed_btn_connect">Connect</string>
+    <string name="hamed_current_server_label">Current Server</string>
+    <string name="hamed_tap_to_disconnect">Tap to disconnect</string>
+    <string name="hamed_tap_to_connect">Tap to connect</string>
+    <string name="hamed_status_connected">Connected</string>
+    <string name="hamed_status_ready">Ready to connect</string>
+    <string name="hamed_speed_test">Ping Test</string>
+    <string name="hamed_session_traffic">Session Traffic</string>
+    <string name="hamed_connection_duration">Connection Duration</string>
     <string name="hamed_btn_disconnect">Disconnect</string>
     <string name="hamed_btn_connecting">Connecting...</string>
     <string name="hamed_connected_time">Duration: %s</string>

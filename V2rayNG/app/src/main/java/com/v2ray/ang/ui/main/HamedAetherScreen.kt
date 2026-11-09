@@ -369,10 +369,14 @@ fun HamedAetherScreen(
                 ) {
                     Column(
                         modifier = Modifier
-                            .weight(0.42f)
+                            .weight(0.44f)
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        HamedServerCard(
+                            tileContext = tileContext,
+                            onTestPing = { onAction(MainAction.TestCurrentServer) }
+                        )
                         HamedHeroConnect(
                             isActuallyConnected = isActuallyConnected,
                             isConnecting = isConnecting,
@@ -382,36 +386,18 @@ fun HamedAetherScreen(
                             shakeTick = uiState.connectionErrorCount,
                             tileContext = tileContext,
                         )
-                        HamedStatusSummary(
-                            isActuallyConnected = isActuallyConnected,
-                            isConnecting = isConnecting,
-                            elapsedSeconds = elapsedSeconds,
-                            trafficState = trafficState,
-                            connectionInfo = connectionInfo,
-                        )
                     }
 
                     Column(
                         modifier = Modifier
-                            .weight(0.58f)
+                            .weight(0.56f)
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        HamedTileEditBar(
-                            editMode = editMode,
-                            hiddenTiles = hiddenTiles,
-                            onExitEdit = { editMode = false },
-                            onReset = ::onLayoutReset,
-                            onShowTile = ::onTileShown,
-                        )
-                        HamedTileGrid(
-                            visibleTiles = visibleTiles,
-                            editMode = editMode,
-                            onEnterEdit = { if (!editMode) editMode = true },
-                            onMove = ::onTileMoved,
-                            onHide = ::onTileHidden,
+                        HamedConnectionDashboardBottom(
                             tileContext = tileContext,
+                            onTestPing = { onAction(MainAction.TestCurrentServer) }
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                     }
@@ -452,63 +438,28 @@ fun HamedAetherScreen(
                             tileContext = tileContext,
                         )
                     } else {
-                        // "top" places the hero above the tiles; "middle" keeps its historic
-                        // meaning of standing after the traffic tiles; "bottom" after all.
-                        if (buttonPosition == "top") {
-                            HamedHeroConnect(
-                                isActuallyConnected = isActuallyConnected,
-                                isConnecting = isConnecting,
-                                preparationStatus = preparationStatus,
-                                elapsedSeconds = elapsedSeconds,
-                                premiumEnabled = premiumEnabled,
-                                shakeTick = uiState.connectionErrorCount,
-                                tileContext = tileContext,
-                            )
-                        }
-                        val middleSplit = (visibleTiles.indexOf(HamedTile.TOTAL).takeIf { it >= 0 } ?: 3)
-                            .let { (it + 1).coerceAtMost(visibleTiles.size) }
+                        // 1. TOP: Protocol & Server selection card (with expandable settings)
+                        HamedServerCard(
+                            tileContext = tileContext,
+                            onTestPing = { onAction(MainAction.TestCurrentServer) }
+                        )
 
-                        HamedTileGrid(
-                            visibleTiles = visibleTiles.take(middleSplit),
-                            editMode = false,
-                            onEnterEdit = { editMode = true },
-                            onMove = ::onTileMoved,
-                            onHide = ::onTileHidden,
+                        // 2. MIDDLE: Connect button hero banner
+                        HamedHeroConnect(
+                            isActuallyConnected = isActuallyConnected,
+                            isConnecting = isConnecting,
+                            preparationStatus = preparationStatus,
+                            elapsedSeconds = elapsedSeconds,
+                            premiumEnabled = premiumEnabled,
+                            shakeTick = uiState.connectionErrorCount,
                             tileContext = tileContext,
                         )
 
-                        if (buttonPosition == "middle") {
-                            HamedHeroConnect(
-                                isActuallyConnected = isActuallyConnected,
-                                isConnecting = isConnecting,
-                                preparationStatus = preparationStatus,
-                                elapsedSeconds = elapsedSeconds,
-                                premiumEnabled = premiumEnabled,
-                                shakeTick = uiState.connectionErrorCount,
-                                tileContext = tileContext,
-                            )
-                        }
-
-                        HamedTileGrid(
-                            visibleTiles = visibleTiles.drop(middleSplit),
-                            editMode = false,
-                            onEnterEdit = { editMode = true },
-                            onMove = ::onTileMoved,
-                            onHide = ::onTileHidden,
+                        // 3. BOTTOM: IP & Connection dashboard
+                        HamedConnectionDashboardBottom(
                             tileContext = tileContext,
+                            onTestPing = { onAction(MainAction.TestCurrentServer) }
                         )
-
-                        if (buttonPosition == "bottom") {
-                            HamedHeroConnect(
-                                isActuallyConnected = isActuallyConnected,
-                                isConnecting = isConnecting,
-                                preparationStatus = preparationStatus,
-                                elapsedSeconds = elapsedSeconds,
-                                premiumEnabled = premiumEnabled,
-                                shakeTick = uiState.connectionErrorCount,
-                                tileContext = tileContext,
-                            )
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
