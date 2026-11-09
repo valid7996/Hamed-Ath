@@ -1801,12 +1801,7 @@ fun HamedConnectionDashboardBottom(
                         style = MaterialTheme.typography.labelSmall,
                         color = HamedThemeColors.TextSecondary
                     )
-                    val totalSessionBytes = tileContext.trafficState.totalDownload + tileContext.trafficState.totalUpload
-                    val sessionStr = if (totalSessionBytes > 0) {
-                        HamedAetherManager.formatDataSize(totalSessionBytes)
-                    } else {
-                        "0 B"
-                    }
+                    val sessionStr = HamedAetherManager.getSessionTotalTraffic()
                     Text(
                         text = sessionStr,
                         style = MaterialTheme.typography.titleMedium.copy(

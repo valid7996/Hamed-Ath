@@ -437,6 +437,14 @@ object HamedAetherManager {
     }
 
     /**
+     * Returns formatted sum of session download and upload bytes.
+     */
+    fun getSessionTotalTraffic(): String {
+        val total = accumulatedDownBytes + accumulatedUpBytes
+        return if (total > 0L) formatDataSize(total) else "0 B"
+    }
+
+    /**
      * Converts a 2-letter ISO country code (e.g. "US", "DE", "IR") to an emoji flag.
      */
     fun countryCodeToEmojiFlag(countryCode: String?): String {
