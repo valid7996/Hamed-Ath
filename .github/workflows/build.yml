@@ -219,11 +219,11 @@ jobs:
         ./gradlew testFdroidDebugUnitTest \
           --tests "com.v2ray.ang.core.*" \
           --tests "com.v2ray.ang.handler.*" \
-          -PpattngVersion="${{ inputs.release_tag || '1.0.7' }}" \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
           --no-daemon \
           --stacktrace
         ./gradlew assembleRelease \
-          -PpattngVersion="${{ inputs.release_tag || '1.0.7' }}" \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
           -Pandroid.injected.signing.store.file="${{ steps.android_keystore.outputs.filePath }}" \
           -Pandroid.injected.signing.store.password="${{ steps.android_keystore.outputs.storePassword }}" \
           -Pandroid.injected.signing.key.alias="${{ steps.android_keystore.outputs.keyAlias }}" \
@@ -260,16 +260,17 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.7
-        name: Hamed Aether v1.0.7 (Official Signed Release)
+        tag_name: v1.0.5
+        name: Hamed Aether v1.0.5 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.7** (Non-Debug, Keystore Signed)
+          Official Production Release of **Hamed Aether v1.0.5** (Non-Debug, Keystore Signed)
+          - Upstream Core & Engine Sync (`AndroidLibXrayLite v26.11.24` / Patterniha 2.4.1 / `hev-socks5-tunnel 2.20.0`):
+            * Full support for `Serverless` (`Patterniha-S`) and `MITM-DomainFronting` (`Patterniha-M` with automatic on-device Root CA generation).
           - **RobinHood Auto Real-Ping Mode**:
-            * Renamed built-in free-config subscription to **RobinHood** and enabled automatic mode by default (no manual config picking required).
-            * On Connect, runs real-ping probes **5 configs at a time** sequentially and automatically connects to the fastest responding config from the first working batch.
-          - Built-in Synced Subscriptions (`AndroidLibXrayLite v26.11.24` / Patterniha 2.4.1 engine):
-            * **Serverless** (`Patterniha-S`), **MITM-DomainFronting** (`Patterniha-M` with on-device Root CA generation), and **RobinHood** (`Free-Configs`), all supporting universal **Psiphon** & **Tor** chaining.
-          - Version Sync (`v1.0.7`).
+            * Renamed built-in free-config subscription to **RobinHood** with Auto mode enabled by default (no manual config selection needed).
+            * Tests configs **5 at a time** sequentially with real ping on Connect and automatically connects to the fastest responding config from the first working batch.
+          - Universal **Psiphon** (with exit region selector) and **Tor** chaining across all built-in subscriptions and Aether protocols.
+          - Version Sync (`v1.0.5`).
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         fail_on_unmatched_files: true
         prerelease: false

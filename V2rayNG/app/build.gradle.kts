@@ -22,7 +22,7 @@ android {
             ?.trim()
             ?.removePrefix("v")
             ?.removePrefix("V")
-            ?.takeIf { it.isNotBlank() } ?: "1.0.7"
+            ?.takeIf { it.isNotBlank() } ?: "1.0.5"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
