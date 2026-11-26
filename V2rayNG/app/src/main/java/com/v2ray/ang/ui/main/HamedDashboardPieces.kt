@@ -120,9 +120,11 @@ data class HamedTileContext(
     val activeSource: HamedDashboardSource = HamedDashboardSource.AETHER,
     val subServers: List<HamedSubServerSummary> = emptyList(),
     val activeSubServerGuid: String? = null,
+    val isSubAutoMode: Boolean = false,
     val isSubSyncing: Boolean = false,
     val onSelectSource: (HamedDashboardSource) -> Unit = {},
     val onSelectSubServer: (String) -> Unit = {},
+    val onEnableSubAutoMode: () -> Unit = {},
     val onSyncSubscriptions: () -> Unit = {},
 )
 
@@ -1444,6 +1446,8 @@ fun HamedBreadcrumbBar(
     modifier: Modifier = Modifier,
     activeSource: HamedDashboardSource = HamedDashboardSource.AETHER,
     activeSubServerName: String = "",
+    isSubAutoMode: Boolean = false,
+    isRunning: Boolean = false,
 ) {
     Row(
         modifier = modifier
@@ -1460,6 +1464,8 @@ fun HamedBreadcrumbBar(
                 AetherProtocol.MIM -> "MIM"
                 AetherProtocol.GOOL -> "WARP"
             }
+        } else if (activeSource == HamedDashboardSource.PATTERNIHA) {
+            stringResource(R.string.hamed_source_patterniha)
         } else {
             activeSource.subRemark
         }
@@ -1470,6 +1476,8 @@ fun HamedBreadcrumbBar(
         }
         val lastLabel = if (activeSource == HamedDashboardSource.AETHER) {
             activeObfs.name.uppercase()
+        } else if (isSubAutoMode && !isRunning) {
+            "AUTO 5×"
         } else {
             activeSubServerName.ifBlank { activeSource.storageId.uppercase() }
         }
@@ -1562,25 +1570,29 @@ fun HamedServerCard(
 
     val obfsSubtext = tileContext.activeObfs.name.lowercase().replaceFirstChar { it.uppercase() }
 
-    val activeSubServer = tileContext.subServers.firstOrNull { it.guid == tileContext.activeSubServerGuid }
-        ?: tileContext.subServers.firstOrNull()
-    val headerTitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
-        protoName
-    } else {
-        activeSubServer?.remarks
-            ?: if (tileContext.isSubSyncing) stringResource(R.string.hamed_sub_syncing)
-            else tileContext.activeSource.subRemark
-    }
-    val headerSubtitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
-        "$chainSubtext • $obfsSubtext"
-    } else {
-        "$chainSubtext • ${tileContext.activeSource.subRemark}"
-    }
     val modeBadgeLabel = when (tileContext.activeSource) {
         HamedDashboardSource.AETHER -> stringResource(R.string.hamed_source_aether)
         HamedDashboardSource.SERVERLESS -> stringResource(R.string.hamed_source_serverless)
         HamedDashboardSource.MITM -> stringResource(R.string.hamed_source_mitm)
         HamedDashboardSource.PATTERNIHA -> stringResource(R.string.hamed_source_patterniha)
+    }
+    val activeSubServer = tileContext.subServers.firstOrNull { it.guid == tileContext.activeSubServerGuid }
+        ?: tileContext.subServers.firstOrNull()
+    val headerTitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+        protoName
+    } else if (tileContext.isSubAutoMode && !tileContext.isRunning) {
+        stringResource(R.string.hamed_sub_auto_mode)
+    } else {
+        activeSubServer?.remarks
+            ?: if (tileContext.isSubSyncing) stringResource(R.string.hamed_sub_syncing)
+            else modeBadgeLabel
+    }
+    val headerSubtitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+        "$chainSubtext • $obfsSubtext"
+    } else if (tileContext.isSubAutoMode && !tileContext.isRunning) {
+        "$chainSubtext • $modeBadgeLabel (${tileContext.subServers.size})"
+    } else {
+        "$chainSubtext • $modeBadgeLabel"
     }
 
     Surface(
@@ -1892,9 +1904,12 @@ private fun HamedSubServerSelectorTile(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val servers = tileContext.subServers
-    val titleText = activeServer?.remarks
-        ?: if (tileContext.isSubSyncing) stringResource(R.string.hamed_sub_syncing)
-        else stringResource(R.string.hamed_sub_no_configs)
+    val titleText = when {
+        tileContext.isSubAutoMode -> stringResource(R.string.hamed_sub_auto_mode)
+        activeServer != null -> activeServer.remarks
+        tileContext.isSubSyncing -> stringResource(R.string.hamed_sub_syncing)
+        else -> stringResource(R.string.hamed_sub_no_configs)
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -1963,8 +1978,30 @@ private fun HamedSubServerSelectorTile(
                     .height(280.dp)
                     .background(HamedThemeColors.CardBackground),
             ) {
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                text = "⚡ " + stringResource(R.string.hamed_sub_auto_mode),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = if (tileContext.isSubAutoMode) FontWeight.Bold else FontWeight.Medium,
+                                color = if (tileContext.isSubAutoMode) HamedThemeColors.AccentCyan else HamedThemeColors.TextPrimary,
+                            )
+                            Text(
+                                text = stringResource(R.string.hamed_sub_auto_subtitle),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = HamedThemeColors.TextSecondary,
+                            )
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        tileContext.onEnableSubAutoMode()
+                    },
+                )
                 servers.forEach { item ->
-                    val isSelected = item.guid == activeServer?.guid
+                    val isSelected = !tileContext.isSubAutoMode && item.guid == activeServer?.guid
                     val pingSuffix = if (item.pingMillis > 0) " (${item.pingMillis} ms)" else ""
                     DropdownMenuItem(
                         text = {

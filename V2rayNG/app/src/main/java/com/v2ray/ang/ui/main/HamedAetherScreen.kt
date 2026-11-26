@@ -127,6 +127,7 @@ fun HamedAetherScreen(
     val sourceServersMap by HamedSubscriptionManager.sourceServers.collectAsState()
     val selectedGuidBySource by HamedSubscriptionManager.selectedGuidBySource.collectAsState()
     val chainBySource by HamedSubscriptionManager.chainBySource.collectAsState()
+    val autoModeBySource by HamedSubscriptionManager.autoModeBySource.collectAsState()
     val sharedPsiphonRegion by HamedSubscriptionManager.psiphonRegion.collectAsState()
     val isSubSyncing by HamedSubscriptionManager.syncing.collectAsState()
 
@@ -293,6 +294,11 @@ fun HamedAetherScreen(
         chainBySource[activeSource] ?: HamedSubscriptionManager.getChain(activeSource)
     }
     val effectivePsiphonRegion = if (sharedPsiphonRegion.isNotBlank()) sharedPsiphonRegion else activePsiphonRegion
+    val isSubAutoMode = if (activeSource == HamedDashboardSource.AETHER) {
+        false
+    } else {
+        autoModeBySource[activeSource] ?: HamedSubscriptionManager.isAutoMode(activeSource)
+    }
     val activeSubServerName = subServersForSource
         .firstOrNull { it.guid == activeSubGuid }
         ?.remarks
@@ -354,6 +360,7 @@ fun HamedAetherScreen(
         activeSource = activeSource,
         subServers = subServersForSource,
         activeSubServerGuid = activeSubGuid,
+        isSubAutoMode = isSubAutoMode,
         isSubSyncing = isSubSyncing,
         onSelectSource = { selectedSource ->
             val targetGuid = HamedSubscriptionManager.selectSource(selectedSource)
@@ -370,6 +377,9 @@ fun HamedAetherScreen(
             HamedSubscriptionManager.selectServer(activeSource, guid)
             onAction(MainAction.SelectServer(guid))
             if (isRunning) onAction(MainAction.RestartService)
+        },
+        onEnableSubAutoMode = {
+            HamedSubscriptionManager.setAutoMode(activeSource, true)
         },
         onSyncSubscriptions = {
             HamedSubscriptionManager.launchSync(force = true) { syncedGuid ->
@@ -416,6 +426,8 @@ fun HamedAetherScreen(
                             activeObfs = activeObfs,
                             activeSource = activeSource,
                             activeSubServerName = activeSubServerName,
+                            isSubAutoMode = isSubAutoMode,
+                            isRunning = isRunning,
                         )
                     }
                 }

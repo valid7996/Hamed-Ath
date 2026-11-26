@@ -298,26 +298,80 @@ object HamedAetherManager {
                     }
                     HamedSubscriptionManager.ensureBuiltInSubscriptions()
                     HamedSubscriptionManager.refreshServerLists()
-                    var targetGuid = HamedSubscriptionManager.selectedGuidBySource.value[activeSource]
-                    if (targetGuid.isNullOrBlank()) {
+                    var subServers = HamedSubscriptionManager.sourceServers.value[activeSource].orEmpty()
+                    if (subServers.isEmpty()) {
                         withContext(Dispatchers.Main) {
                             onStatusChange(locCtx.getString(R.string.hamed_prep_syncing_sub))
                         }
-                        targetGuid = HamedSubscriptionManager.syncBlocking(
+                        HamedSubscriptionManager.syncBlocking(
                             sources = listOf(activeSource),
                             force = false,
                         )
+                        HamedSubscriptionManager.refreshServerLists()
+                        subServers = HamedSubscriptionManager.sourceServers.value[activeSource].orEmpty()
                     }
-                    if (targetGuid.isNullOrBlank()) {
+                    if (subServers.isEmpty()) {
                         withContext(Dispatchers.Main) {
                             _preparationStatus.value = null
                             onError(locCtx.getString(R.string.hamed_sub_sync_failed))
                         }
                         return@launch
                     }
-                    MmkvManager.setSelectServer(targetGuid)
+
+                    val targetGuid = if (HamedSubscriptionManager.isAutoMode(activeSource)) {
+                        val candidates = HamedSubscriptionManager.orderedAutoCandidates(subServers)
+                            .map { it.guid }
+                        val selection = com.v2ray.ang.core.HamedAutoPingSelector.measureAndSelectFirstWorking(
+                            context = context,
+                            candidateGuids = candidates,
+                            onBatchStart = { progress ->
+                                withContext(Dispatchers.Main) {
+                                    onStatusChange(
+                                        locCtx.getString(
+                                            R.string.hamed_prep_testing_batch,
+                                            progress.batchIndex,
+                                            progress.startNumber,
+                                            progress.endNumber,
+                                            progress.totalCount,
+                                        )
+                                    )
+                                }
+                            },
+                        )
+                        if (selection == null) {
+                            withContext(Dispatchers.Main) {
+                                _preparationStatus.value = null
+                                onError(locCtx.getString(R.string.hamed_sub_no_working_ping))
+                            }
+                            return@launch
+                        }
+                        HamedSubscriptionManager.applyAutoSelectedServer(activeSource, selection.guid)
+                        withContext(Dispatchers.Main) {
+                            onStatusChange(
+                                locCtx.getString(
+                                    R.string.hamed_prep_found_connecting,
+                                    selection.delayMillis.toInt().coerceAtLeast(1),
+                                )
+                            )
+                        }
+                        selection.guid
+                    } else {
+                        val manualGuid = HamedSubscriptionManager.selectedGuidBySource.value[activeSource]
+                            ?: subServers.firstOrNull()?.guid
+                        if (manualGuid.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                _preparationStatus.value = null
+                                onError(locCtx.getString(R.string.hamed_sub_sync_failed))
+                            }
+                            return@launch
+                        }
+                        MmkvManager.setSelectServer(manualGuid)
+                        withContext(Dispatchers.Main) {
+                            onStatusChange(locCtx.getString(R.string.hamed_prep_connecting))
+                        }
+                        manualGuid
+                    }
                     withContext(Dispatchers.Main) {
-                        onStatusChange(locCtx.getString(R.string.hamed_prep_connecting))
                         onSuccess(targetGuid)
                     }
                     return@launch

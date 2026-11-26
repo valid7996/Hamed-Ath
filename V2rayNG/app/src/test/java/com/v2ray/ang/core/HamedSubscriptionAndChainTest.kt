@@ -8,7 +8,10 @@ import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.handler.HamedDashboardSource
 import com.v2ray.ang.handler.HamedMitmCertGenerator
+import com.v2ray.ang.handler.HamedSubServerSummary
+import com.v2ray.ang.handler.HamedSubscriptionManager
 import com.v2ray.ang.ui.main.HamedChainType
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -273,5 +276,81 @@ class HamedSubscriptionAndChainTest {
         assertEquals(AetherTor.ONLY.type, torCarrier.aetherTor)
         assertEquals(AetherPsiphon.OFF.type, torCarrier.aetherPsiphon)
         assertNull(torCarrier.aetherPsiphonRegion)
+    }
+
+    @Test
+    fun robinHoodDefaultsToAutoModeAndOrdersCandidatesProperly() {
+        assertEquals("RobinHood", HamedDashboardSource.PATTERNIHA.subRemark)
+        assertTrue(HamedSubscriptionManager.defaultAutoFor(HamedDashboardSource.PATTERNIHA))
+        assertFalse(HamedSubscriptionManager.defaultAutoFor(HamedDashboardSource.SERVERLESS))
+        assertFalse(HamedSubscriptionManager.defaultAutoFor(HamedDashboardSource.MITM))
+        assertFalse(HamedSubscriptionManager.defaultAutoFor(HamedDashboardSource.AETHER))
+
+        val list = listOf(
+            HamedSubServerSummary("dead", "Dead", "", EConfigType.VLESS, -1L),
+            HamedSubServerSummary("untested-1", "U1", "", EConfigType.VLESS, 0L),
+            HamedSubServerSummary("slow", "Slow", "", EConfigType.VLESS, 420L),
+            HamedSubServerSummary("fast", "Fast", "", EConfigType.VLESS, 95L),
+            HamedSubServerSummary("untested-2", "U2", "", EConfigType.VLESS, 0L),
+        )
+        val ordered = HamedSubscriptionManager.orderedAutoCandidates(list).map { it.guid }
+        assertEquals(listOf("fast", "slow", "untested-1", "untested-2", "dead"), ordered)
+    }
+
+    @Test
+    fun batchOf5SelectorConnectsOnFirstRespondingBatchAndSkipsLaterBatches() = runBlocking {
+        val guids = (1..12).map { "g$it" }
+        val testedBatches = mutableListOf<List<String>>()
+        val cancelledBatches = mutableListOf<List<String>>()
+
+        // Batch 1 (g1..g5) all fail; Batch 2 (g6..g10) has g8=180ms and g10=90ms; Batch 3 must never run.
+        val result = HamedAutoPingSelector.selectFirstRespondingInBatches(
+            candidateGuids = guids,
+            batchSize = 5,
+            graceWindowMs = 0L,
+        ) { batchGuids, onResult, onFinish ->
+            testedBatches.add(batchGuids)
+            batchGuids.forEach { guid ->
+                val delay = when (guid) {
+                    "g8" -> 180L
+                    "g10" -> 90L
+                    else -> -1L
+                }
+                onResult(guid, delay)
+            }
+            onFinish()
+            HamedAutoPingSelector.BatchControl { cancelledBatches.add(batchGuids) }
+        }
+
+        assertNotNull(result)
+        assertEquals("g10", result!!.guid)
+        assertEquals(90L, result.delayMillis)
+        assertEquals(2, result.progress.batchIndex)
+        assertEquals(6, result.progress.startNumber)
+        assertEquals(10, result.progress.endNumber)
+        assertEquals(2, testedBatches.size)
+        assertEquals(listOf("g1", "g2", "g3", "g4", "g5"), testedBatches[0])
+        assertEquals(listOf("g6", "g7", "g8", "g9", "g10"), testedBatches[1])
+        assertEquals(2, cancelledBatches.size)
+    }
+
+    @Test
+    fun batchOf5SelectorReturnsNullWhenAllBatchesFail() = runBlocking {
+        val guids = (1..7).map { "bad$it" }
+        val testedBatches = mutableListOf<Int>()
+
+        val result = HamedAutoPingSelector.selectFirstRespondingInBatches(
+            candidateGuids = guids,
+            batchSize = 5,
+            graceWindowMs = 0L,
+        ) { batchGuids, onResult, onFinish ->
+            testedBatches.add(batchGuids.size)
+            batchGuids.forEach { onResult(it, -1L) }
+            onFinish()
+            HamedAutoPingSelector.BatchControl {}
+        }
+
+        assertNull(result)
+        assertEquals(listOf(5, 2), testedBatches)
     }
 }

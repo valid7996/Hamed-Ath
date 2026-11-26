@@ -94,6 +94,7 @@ object AppConfig {
     const val PREF_HAMED_DASHBOARD_SOURCE = "pref_hamed_dashboard_source"
     const val PREF_HAMED_SUB_CHAIN_PREFIX = "pref_hamed_sub_chain_"
     const val PREF_HAMED_SUB_SELECTED_GUID_PREFIX = "pref_hamed_sub_selected_guid_"
+    const val PREF_HAMED_SUB_AUTO_PREFIX = "pref_hamed_sub_auto_"
     const val PREF_HAMED_SUB_PSIPHON_REGION = "pref_hamed_sub_psiphon_region"
     const val MITM_CERT_FILE = "mycert.crt"
     const val MITM_KEY_FILE = "mycert.key"

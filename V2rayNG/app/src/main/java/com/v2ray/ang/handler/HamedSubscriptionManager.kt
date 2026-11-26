@@ -48,7 +48,7 @@ enum class HamedDashboardSource(
     ),
     PATTERNIHA(
         storageId = "patterniha",
-        subRemark = "Patterniha",
+        subRemark = "RobinHood",
         subUrl = "https://raw.githubusercontent.com/patterniha/Free-Configs/main/configs.txt",
     );
 
@@ -97,6 +97,9 @@ object HamedSubscriptionManager {
 
     private val _chainBySource = MutableStateFlow<Map<HamedDashboardSource, HamedChainType>>(emptyMap())
     val chainBySource: StateFlow<Map<HamedDashboardSource, HamedChainType>> = _chainBySource.asStateFlow()
+
+    private val _autoModeBySource = MutableStateFlow<Map<HamedDashboardSource, Boolean>>(emptyMap())
+    val autoModeBySource: StateFlow<Map<HamedDashboardSource, Boolean>> = _autoModeBySource.asStateFlow()
 
     private val _psiphonRegion = MutableStateFlow("")
     val psiphonRegion: StateFlow<String> = _psiphonRegion.asStateFlow()
@@ -148,7 +151,8 @@ object HamedSubscriptionManager {
                 url.equals(source.subUrl, ignoreCase = true) ||
                     url.substringBefore('#').equals(baseUrl, ignoreCase = true) ||
                     remarks.equals(source.subRemark, ignoreCase = true) ||
-                    remarks.equals("[${source.subRemark}", ignoreCase = true)
+                    remarks.equals("[${source.subRemark}", ignoreCase = true) ||
+                    (source == HamedDashboardSource.PATTERNIHA && remarks.equals("Patterniha", ignoreCase = true))
             }
             if (found != null) {
                 var changed = false
@@ -300,6 +304,43 @@ object HamedSubscriptionManager {
         _sourceServers.value = serversMap
         _selectedGuidBySource.value = selectedMap
         refreshChainState()
+        refreshAutoModeState()
+    }
+
+    /** Whether [source] automatically tests configs in batches of 5 on connect. */
+    fun defaultAutoFor(source: HamedDashboardSource): Boolean = source == HamedDashboardSource.PATTERNIHA
+
+    /** Returns `true` when [source] should auto-select the best responding server in batches of 5. */
+    fun isAutoMode(source: HamedDashboardSource): Boolean {
+        if (source == HamedDashboardSource.AETHER) return false
+        val defaultAuto = defaultAutoFor(source)
+        return runCatching {
+            MmkvManager.decodeSettingsBool(AppConfig.PREF_HAMED_SUB_AUTO_PREFIX + source.storageId, defaultAuto)
+        }.getOrDefault(defaultAuto)
+    }
+
+    /** Enables or disables automatic 5-batch real-ping selection for [source]. */
+    fun setAutoMode(source: HamedDashboardSource, enabled: Boolean) {
+        if (source == HamedDashboardSource.AETHER) return
+        MmkvManager.encodeSettings(AppConfig.PREF_HAMED_SUB_AUTO_PREFIX + source.storageId, enabled)
+        _autoModeBySource.value = _autoModeBySource.value.toMutableMap().apply { put(source, enabled) }
+    }
+
+    /** Orders subscription servers for batch-of-5 testing: previously responding fastest first, then untested, then failed. */
+    fun orderedAutoCandidates(servers: List<HamedSubServerSummary>): List<HamedSubServerSummary> {
+        val positive = servers.filter { it.pingMillis > 0L }.sortedBy { it.pingMillis }
+        val untested = servers.filter { it.pingMillis == 0L }
+        val failed = servers.filter { it.pingMillis < 0L }
+        return positive + untested + failed
+    }
+
+    /** Records the winning [guid] chosen by automatic batch probing without leaving auto mode. */
+    fun applyAutoSelectedServer(source: HamedDashboardSource, guid: String) {
+        if (source == HamedDashboardSource.AETHER) return
+        MmkvManager.encodeSettings(AppConfig.PREF_HAMED_SUB_SELECTED_GUID_PREFIX + source.storageId, guid)
+        MmkvManager.setSelectServer(guid)
+        _selectedGuidBySource.value = _selectedGuidBySource.value.toMutableMap().apply { put(source, guid) }
+        refreshServerLists()
     }
 
     /** Switches dashboard mode to [source] and returns the active profile GUID if available. */
@@ -324,12 +365,13 @@ object HamedSubscriptionManager {
         return chosenGuid
     }
 
-    /** Selects a specific profile [guid] inside subscription [source]. */
+    /** Selects a specific profile [guid] inside subscription [source], switching that source to manual choice. */
     fun selectServer(source: HamedDashboardSource, guid: String) {
         if (source == HamedDashboardSource.AETHER) {
             selectSource(HamedDashboardSource.AETHER)
             return
         }
+        setAutoMode(source, false)
         MmkvManager.encodeSettings(AppConfig.PREF_HAMED_DASHBOARD_SOURCE, source.storageId)
         MmkvManager.encodeSettings(AppConfig.PREF_HAMED_SUB_SELECTED_GUID_PREFIX + source.storageId, guid)
         _activeSource.value = source
@@ -439,6 +481,7 @@ object HamedSubscriptionManager {
         _activeSource.value = getActiveSource()
         _psiphonRegion.value = getPsiphonRegion()
         refreshChainState()
+        refreshAutoModeState()
     }
 
     private fun refreshChainState() {
@@ -447,6 +490,14 @@ object HamedSubscriptionManager {
             chains[source] = getChain(source)
         }
         _chainBySource.value = chains
+    }
+
+    private fun refreshAutoModeState() {
+        val autos = HashMap<HamedDashboardSource, Boolean>()
+        HamedDashboardSource.entries.forEach { source ->
+            autos[source] = isAutoMode(source)
+        }
+        _autoModeBySource.value = autos
     }
 
     private fun defaultChainFor(source: HamedDashboardSource): HamedChainType = when (source) {
