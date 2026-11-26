@@ -2,6 +2,7 @@ package com.v2ray.ang.ui.settings
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -14,18 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,37 +35,40 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.VPN
 import com.v2ray.ang.R
-import com.v2ray.ang.handler.HamedAetherManager
-import com.v2ray.ang.ui.AboutActivity
-import com.v2ray.ang.ui.perappproxy.PerAppProxyActivity
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
+import com.v2ray.ang.handler.SettingsChangeManager
+import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
-import com.v2ray.ang.ui.compose.CollapsiblePreferenceGroupHeader
+import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.HamedFontScale
 import com.v2ray.ang.ui.compose.HamedPaletteId
-import com.v2ray.ang.ui.compose.HamedThemeColors
-import com.v2ray.ang.ui.compose.NavigationBarsSpacer
-import com.v2ray.ang.ui.compose.SettingsEditItem
-import com.v2ray.ang.ui.compose.SettingsListItem
-import com.v2ray.ang.ui.compose.SettingsMenuItem
-import com.v2ray.ang.ui.compose.SettingsSwitchItem
 import com.v2ray.ang.ui.compose.ThemeManager
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.launch
 
-class SettingsActivity : BaseComponentActivity() {
+abstract class BaseSettingsActivity : BaseComponentActivity() {
 
     private val viewModel: SettingsViewModel by viewModels()
+    private var forwardingToTv = false
+
+    protected open fun televisionDestination(): Intent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val destination = televisionDestination()
+        forwardingToTv = destination != null
         super.onCreate(savedInstanceState)
+        if (destination != null) {
+            startActivity(destination)
+            finish()
+            return
+        }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 viewModel.refreshSystemVpnSettingsAvailability()
@@ -90,58 +92,137 @@ class SettingsActivity : BaseComponentActivity() {
     }
 
     @Composable
-    override fun ScreenContent() {
-        SettingsScreen(
-            viewModel = viewModel,
-            onBackClick = { finish() },
-            onModeHelpClicked = { Utils.openUri(this, AppConfig.APP_WIKI_MODE) },
-            onSystemVpnSettingsClicked = ::openSystemVpnSettings
-        )
+    final override fun ScreenContent() {
+        if (forwardingToTv) return
+        val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+        SettingsLayout(isLoading) { modifier, rows ->
+            SettingsForm(
+                modifier = modifier,
+                rows = rows,
+                viewModel = viewModel,
+                onModeHelpClicked = { Utils.openUri(this, AppConfig.APP_WIKI_MODE) },
+                onSystemVpnSettingsClicked = ::openSystemVpnSettings
+            )
+        }
+    }
+
+    @Composable
+    internal abstract fun SettingsLayout(isLoading: Boolean, form: @Composable (Modifier, SettingsRows) -> Unit)
+}
+
+class SettingsActivity : BaseSettingsActivity() {
+
+    override fun televisionDestination(): Intent? {
+        val uiMode = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
+        return if (uiMode == Configuration.UI_MODE_TYPE_TELEVISION) Intent(this, TvSettingsActivity::class.java) else null
+    }
+
+    @Composable
+    override fun SettingsLayout(isLoading: Boolean, form: @Composable (Modifier, SettingsRows) -> Unit) {
+        val scrollState = rememberScrollState()
+        Scaffold(
+            contentWindowInsets = WindowInsets(0),
+            topBar = {
+                AppTopBar(title = stringResource(R.string.title_settings), onBackClick = { finish() }, isLoading = isLoading)
+            }
+        ) { innerPadding ->
+            form(Modifier.fillMaxSize().padding(innerPadding).verticalScrollbar(scrollState).verticalScroll(scrollState), PhoneSettingsRows)
+        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
+private fun SettingsForm(
+    modifier: Modifier,
+    rows: SettingsRows,
     viewModel: SettingsViewModel,
-    onBackClick: () -> Unit,
     onModeHelpClicked: () -> Unit,
     onSystemVpnSettingsClicked: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val systemVpnSettingsAvailable by viewModel.systemVpnSettingsAvailable.collectAsStateWithLifecycle()
+    val aetherListenPort by viewModel.aetherListenPort.collectAsStateWithLifecycle()
+    var uiSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var vpnSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var coreSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var muxSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+    var observatorySettingsExpanded by rememberSaveable { mutableStateOf(false) }
+    var advancedSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var modeSettingsExpanded by rememberSaveable { mutableStateOf(true) }
 
-    var aetherSettingsExpanded by rememberSaveable { mutableStateOf(true) }
-    var generalSettingsExpanded by rememberSaveable { mutableStateOf(true) }
+    var localDns by rememberMmkvBool(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+    var fakeDns by rememberMmkvBool(AppConfig.PREF_FAKE_DNS_ENABLED, true)
+    var appendHttpProxy by rememberMmkvBool(AppConfig.PREF_APPEND_HTTP_PROXY, false)
+    var vpnDns by rememberMmkvString(AppConfig.PREF_VPN_DNS, "")
+    var vpnBypassLan by rememberMmkvString(AppConfig.PREF_VPN_BYPASS_LAN, AppConfig.DEFAULT_VPN_BYPASS_LAN)
+    var vpnInterfaceAddress by rememberMmkvString(AppConfig.PREF_VPN_INTERFACE_ADDRESS_CONFIG_INDEX, "0")
+    var vpnMtu by rememberMmkvString(AppConfig.PREF_VPN_MTU, "")
 
-    // 1. Masque Transport
-    var aetherTransport by rememberMmkvString(AppConfig.PREF_AETHER_TRANSPORT, "h2")
-    // 2. Scan Mode
-    var aetherScanMode by rememberMmkvString(AppConfig.PREF_AETHER_SCAN_MODE, "balanced")
-    // 3. Obfuscation
-    var aetherObfuscation by rememberMmkvString(AppConfig.PREF_AETHER_OBFUSCATION_OVERRIDE, "auto")
-    // 4. exit-node finalMask raw JSON
-    var aetherFinalMask by rememberMmkvString(AppConfig.PREF_AETHER_FINAL_MASK, "")
-    // 5. exit-node dialMode
-    var aetherDialMode by rememberMmkvString(AppConfig.PREF_AETHER_DIAL_MODE, "")
+    var mux by rememberMmkvBool(AppConfig.PREF_MUX_ENABLED, false)
+    var muxConcurrency by rememberMmkvString(AppConfig.PREF_MUX_CONCURRENCY, "8")
+    var muxXudpConcurrency by rememberMmkvString(AppConfig.PREF_MUX_XUDP_CONCURRENCY, AppConfig.DEFAULT_MUX_XUDP_CONCURRENCY)
+    var muxXudpQuic by rememberMmkvString(AppConfig.PREF_MUX_XUDP_QUIC, "reject")
 
-    fun syncAetherProfile() {
-        val (guid, profile) = HamedAetherManager.getActiveAetherProfile()
-        HamedAetherManager.applySettingsToProfile(profile)
-        MmkvManager.encodeServerConfig(guid, profile)
-    }
+    var observatoryLeastPingInterval by rememberMmkvString(AppConfig.PREF_OBSERVATORY_LEAST_PING_INTERVAL, AppConfig.OBSERVATORY_LEAST_PING_INTERVAL)
+    var observatoryLeastLoadInterval by rememberMmkvString(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_INTERVAL, AppConfig.OBSERVATORY_LEAST_LOAD_INTERVAL)
+    var observatoryLeastLoadMethod by rememberMmkvString(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_METHOD, AppConfig.OBSERVATORY_LEAST_LOAD_METHOD)
+    var observatoryLeastLoadSampling by rememberMmkvString(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_SAMPLING, AppConfig.OBSERVATORY_LEAST_LOAD_SAMPLING)
+    var observatoryLeastLoadTimeout by rememberMmkvString(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_TIMEOUT, AppConfig.OBSERVATORY_LEAST_LOAD_TIMEOUT)
 
     var mode by rememberMmkvString(AppConfig.PREF_MODE, VPN)
-    var buttonPosition by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
+    var enableRootMode by rememberMmkvBool(AppConfig.PREF_ROOT_MODE_ENABLE, false)
+    var lanSharing by rememberMmkvBool(AppConfig.PREF_ROOT_LAN_SHARING, false)
+
+    var hevTunLogLevel by rememberMmkvString(AppConfig.PREF_HEV_TUNNEL_LOGLEVEL, AppConfig.DEFAULT_HEV_TUNNEL_LOGLEVEL)
+    var hevTunRwTimeout by rememberMmkvString(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, "")
+    var useHevTun by rememberMmkvBool(AppConfig.PREF_USE_HEV_TUNNEL, false)
+
+    var enableLocalProxy by rememberMmkvBool(AppConfig.PREF_ENABLE_LOCAL_PROXY, true)
+    var socksPort by rememberMmkvString(AppConfig.PREF_SOCKS_PORT, "")
+    var dynamicSocksPort by rememberMmkvBool(AppConfig.PREF_DYNAMIC_SOCKS_PORT, false)
+    var socksUsername by rememberMmkvString(AppConfig.PREF_SOCKS_USERNAME, "")
+    var socksPassword by rememberMmkvString(AppConfig.PREF_SOCKS_PASSWORD, "")
+    var socksEnableUdp by rememberMmkvBool(AppConfig.PREF_SOCKS_ENABLE_UDP, AppConfig.DEFAULT_SOCKS_ENABLE_UDP)
+    var proxySharing by rememberMmkvBool(AppConfig.PREF_PROXY_SHARING, false)
+
     var speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, true)
+    var confirmRemove by rememberMmkvBool(AppConfig.PREF_CONFIRM_REMOVE, false)
+    var doubleColumnDisplay by rememberMmkvBool(AppConfig.PREF_DOUBLE_COLUMN_DISPLAY, false)
+    var groupAllDisplay by rememberMmkvBool(AppConfig.PREF_GROUP_ALL_DISPLAY, false)
     var language by remember {
         mutableStateOf(
             MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE, "auto") ?: "auto"
         )
     }
     var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "0")
+    var hamedButtonPos by rememberMmkvString(AppConfig.PREF_HAMED_BUTTON_POSITION, "middle")
+    val selectedPalette by ThemeManager.palette.collectAsState()
+    val selectedFontScale by ThemeManager.fontScale.collectAsState()
     var dynamicColor by rememberMmkvBool(AppConfig.PREF_DYNAMIC_COLOR, true)
+
+    var ipv6Enabled by rememberMmkvBool(AppConfig.PREF_IPV6_ENABLED, AppConfig.DEFAULT_IPV6_ENABLED)
+    var preferIpv6 by rememberMmkvBool(AppConfig.PREF_PREFER_IPV6, false)
+    var sniffingEnabled by rememberMmkvBool(AppConfig.PREF_SNIFFING_ENABLED, true)
+    var routeOnlyEnabled by rememberMmkvBool(AppConfig.PREF_ROUTE_ONLY_ENABLED, false)
+    var remoteDns by rememberMmkvString(AppConfig.PREF_REMOTE_DNS, "")
+    var domesticDns by rememberMmkvString(AppConfig.PREF_DOMESTIC_DNS, "")
+    var dnsParallelQuery by rememberMmkvBool(AppConfig.PREF_DNS_PARALLEL_QUERY, false)
+    var dnsServeStale by rememberMmkvBool(AppConfig.PREF_DNS_SERVE_STALE, false)
+    var validateRegion by rememberMmkvBool(AppConfig.PREF_DNS_VALIDATE_REGION, true)
+    var dnsHosts by rememberMmkvString(AppConfig.PREF_DNS_HOSTS, "")
+    var coreLogLevel by rememberMmkvString(AppConfig.PREF_LOGLEVEL, "warning")
+    var outboundResolveMethod by rememberMmkvString(AppConfig.PREF_OUTBOUND_DOMAIN_RESOLVE_METHOD, AppConfig.DEFAULT_OUTBOUND_DOMAIN_RESOLVE_METHOD)
+
+    var isBooted by rememberMmkvBool(AppConfig.PREF_IS_BOOTED, false)
+    var delayTestUrl by rememberMmkvString(AppConfig.PREF_DELAY_TEST_URL, "")
+    var realPingConcurrency by rememberMmkvString(AppConfig.PREF_REAL_PING_CONCURRENCY, "16")
+    var ipApiUrl by rememberMmkvString(AppConfig.PREF_IP_API_URL, "")
+
+    val isVpn = mode == VPN
+    val hevTunEnabled = isVpn && useHevTun
+    // the core also keeps the local proxy for the root mode and its LAN sharing, which reach it through HEV
+    val localProxyForced = hevTunEnabled || enableRootMode || lanSharing
+    val effectiveLocalProxy = enableLocalProxy || localProxyForced
+    val muxXudpConcurrencyInt = muxXudpConcurrency.toIntOrNull() ?: AppConfig.DEFAULT_MUX_XUDP_CONCURRENCY.toInt()
 
     val dynamicColorSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     LaunchedEffect(dynamicColorSupported) {
@@ -151,149 +232,114 @@ fun SettingsScreen(
         }
     }
 
-    val languageEntries = stringArrayResource(R.array.language_select).toList()
-    val languageValues = stringArrayResource(R.array.language_select_value).toList()
-    val uiModeNightEntries = stringArrayResource(R.array.ui_mode_night).toList()
-    val uiModeNightValues = stringArrayResource(R.array.ui_mode_night_value).toList()
-    val modeEntries = stringArrayResource(R.array.mode_entries).toList()
-    val modeValues = stringArrayResource(R.array.mode_value).toList()
     val buttonPositionEntries = stringArrayResource(R.array.hamed_button_position_entries).toList()
     val buttonPositionValues = stringArrayResource(R.array.hamed_button_position_values).toList()
-    val transportEntries = stringArrayResource(R.array.aether_transport_entries).toList()
-    val transportValues = stringArrayResource(R.array.aether_transport_values).toList()
-    val scanEntries = stringArrayResource(R.array.aether_scan_entries).toList()
-    val scanValues = stringArrayResource(R.array.aether_scan_values).toList()
-    val obfuscationEntries = stringArrayResource(R.array.aether_obfuscation_entries).toList()
-    val obfuscationValues = stringArrayResource(R.array.aether_obfuscation_values).toList()
     val paletteEntries = stringArrayResource(R.array.hamed_palette_entries).toList()
     val paletteValues = stringArrayResource(R.array.hamed_palette_values).toList()
     val fontEntries = stringArrayResource(R.array.hamed_font_scale_entries).toList()
     val fontValues = stringArrayResource(R.array.hamed_font_scale_values).toList()
-    val selectedPalette = ThemeManager.palette.collectAsStateWithLifecycle().value
-    val selectedFontScale = ThemeManager.fontScale.collectAsStateWithLifecycle().value
+    val languageEntries = stringArrayResource(R.array.language_select).toList()
+    val languageValues = stringArrayResource(R.array.language_select_value).toList()
+    val uiModeNightEntries = stringArrayResource(R.array.ui_mode_night).toList()
+    val uiModeNightValues = stringArrayResource(R.array.ui_mode_night_value).toList()
+    val bypassLanEntries = stringArrayResource(R.array.vpn_bypass_lan).toList()
+    val bypassLanValues = stringArrayResource(R.array.vpn_bypass_lan_value).toList()
+    val interfaceAddrEntries = stringArrayResource(R.array.vpn_interface_address).toList()
+    val interfaceAddrValues = stringArrayResource(R.array.vpn_interface_address_value).toList()
+    val hevLogEntries = stringArrayResource(R.array.hev_tunnel_loglevel).toList()
+    val hevLogValues = stringArrayResource(R.array.hev_tunnel_loglevel).toList()
+    val coreLogLevelEntries = stringArrayResource(R.array.core_loglevel).toList()
+    val coreLogLevelValues = stringArrayResource(R.array.core_loglevel).toList()
+    val outboundResolveEntries = stringArrayResource(R.array.outbound_domain_resolve_method).toList()
+    val outboundResolveValues = stringArrayResource(R.array.outbound_domain_resolve_method_value).toList()
+    val xudpQuicEntries = stringArrayResource(R.array.mux_xudp_quic_entries).toList()
+    val xudpQuicValues = stringArrayResource(R.array.mux_xudp_quic_value).toList()
+    val observatoryLeastLoadMethodEntries = stringArrayResource(R.array.observatory_least_load_method).toList()
+    val observatoryLeastLoadMethodValues = stringArrayResource(R.array.observatory_least_load_method).toList()
+    val modeEntries = stringArrayResource(R.array.mode_entries).toList()
+    val modeValues = stringArrayResource(R.array.mode_value).toList()
 
-    Scaffold(
-        containerColor = HamedThemeColors.Background,
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.title_settings),
-                onBackClick = onBackClick,
-                isLoading = isLoading
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScrollbar(scrollState)
-                .verticalScroll(scrollState)
-        ) {
-            val context = LocalContext.current
-
-            // ==========================================
-            // بخش اول: تنظیمات Aether
-            // ==========================================
+    with(rows) {
+        Column(modifier = modifier) {
             CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.hamed_section_aether),
-                expanded = aetherSettingsExpanded,
-                onExpandedChange = { aetherSettingsExpanded = it }
+                title = stringResource(R.string.title_ui_settings),
+                expanded = uiSettingsExpanded,
+                onExpandedChange = { uiSettingsExpanded = it }
             )
-            if (aetherSettingsExpanded) {
-                // 1. Masque Transport
-                SettingsListItem(
-                    title = stringResource(R.string.hamed_setting_masque_transport),
-                    entries = transportEntries,
-                    values = transportValues,
-                    selectedValue = aetherTransport,
-                    onSelected = {
-                        aetherTransport = it
-                        syncAetherProfile()
-                    }
-                )
-                // 2. Scan Mode
-                SettingsListItem(
-                    title = stringResource(R.string.hamed_setting_scan_mode),
-                    entries = scanEntries,
-                    values = scanValues,
-                    selectedValue = aetherScanMode,
-                    onSelected = {
-                        aetherScanMode = it
-                        syncAetherProfile()
-                    }
-                )
-                // 3. Obfuscation
-                SettingsListItem(
-                    title = stringResource(R.string.hamed_setting_obfuscation),
-                    entries = obfuscationEntries,
-                    values = obfuscationValues,
-                    selectedValue = aetherObfuscation,
-                    onSelected = {
-                        aetherObfuscation = it
-                        syncAetherProfile()
-                    }
-                )
-                // 4. exit-node finalMask raw JSON, format: { FinalMaskObject }
-                SettingsEditItem(
-                    title = stringResource(R.string.aether_lab_exit_final_mask),
-                    value = aetherFinalMask,
-                    onValueChanged = {
-                        aetherFinalMask = it
-                        syncAetherProfile()
-                    }
-                )
-                // 5. exit-node dialMode
-                SettingsEditItem(
-                    title = stringResource(R.string.aether_lab_exit_dial_mode),
-                    value = aetherDialMode,
-                    onValueChanged = {
-                        aetherDialMode = it
-                        syncAetherProfile()
-                    }
-                )
-            }
-
-            // ==========================================
-            // بخش دوم: تنظیمات عمومی و کاربری
-            // ==========================================
-            CollapsiblePreferenceGroupHeader(
-                title = stringResource(R.string.hamed_section_general),
-                expanded = generalSettingsExpanded,
-                onExpandedChange = { generalSettingsExpanded = it }
-            )
-            if (generalSettingsExpanded) {
+            if (uiSettingsExpanded) {
                 SettingsListItem(
                     title = stringResource(R.string.hamed_button_position_title),
                     entries = buttonPositionEntries,
                     values = buttonPositionValues,
-                    selectedValue = buttonPosition,
-                    onSelected = { buttonPosition = it }
+                    selectedValue = hamedButtonPos,
+                    onSelected = { hamedButtonPos = it }
                 )
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_settings_mode_title),
-                    entries = modeEntries,
-                    values = modeValues,
-                    selectedValue = mode,
-                    onSelected = { mode = it }
+                    title = stringResource(R.string.hamed_settings_theme_title),
+                    entries = paletteEntries,
+                    values = paletteValues,
+                    selectedValue = selectedPalette.storage,
+                    onSelected = { ThemeManager.setPalette(HamedPaletteId.fromStorage(it)) }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.hamed_settings_font_title),
+                    entries = fontEntries,
+                    values = fontValues,
+                    selectedValue = HamedFontScale.entries.firstOrNull { it.scale == selectedFontScale }
+                        ?.storage ?: HamedFontScale.MEDIUM.storage,
+                    onSelected = { ThemeManager.setFontScale(HamedFontScale.fromStorage(it).scale) }
+                )
+                SettingsMenuItem(
+                    title = stringResource(R.string.hamed_settings_tile_layout_title),
+                    subtitle = stringResource(R.string.hamed_settings_tile_layout_summary),
+                    onClick = { MmkvManager.encodeSettings(AppConfig.PREF_HAMED_TILE_LAYOUT, "") }
                 )
                 SettingsSwitchItem(
-                    title = stringResource(R.string.hamed_general_speed),
-                    summary = stringResource(R.string.hamed_general_speed_summary),
+                    title = stringResource(R.string.title_pref_speed_enabled),
+                    summary = stringResource(R.string.summary_pref_speed_enabled),
                     checked = speedEnabled,
                     onCheckedChange = { speedEnabled = it }
                 )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_per_apps_24dp),
-                    title = stringResource(R.string.hamed_settings_per_app),
-                    subtitle = stringResource(R.string.title_pref_per_app_proxy),
-                    onClick = { context.startActivity(Intent(context, PerAppProxyActivity::class.java)) }
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_confirm_remove),
+                    summary = stringResource(R.string.summary_pref_confirm_remove),
+                    checked = confirmRemove,
+                    onCheckedChange = { confirmRemove = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_double_column_display),
+                    summary = stringResource(R.string.summary_pref_double_column_display),
+                    checked = doubleColumnDisplay,
+                    onCheckedChange = {
+                        doubleColumnDisplay = it
+                        SettingsChangeManager.makeSetupGroupTab()
+                    }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_group_all_display),
+                    summary = stringResource(R.string.summary_pref_group_all_display),
+                    checked = groupAllDisplay,
+                    onCheckedChange = {
+                        groupAllDisplay = it
+                        SettingsChangeManager.makeSetupGroupTab()
+                    }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_dynamic_color),
+                    summary = stringResource(R.string.summary_pref_dynamic_color),
+                    checked = dynamicColor,
+                    enabled = dynamicColorSupported,
+                    onCheckedChange = {
+                        dynamicColor = it
+                        ThemeManager.setDynamicColorEnabled(it)
+                    }
                 )
                 SettingsListItem(
                     title = stringResource(R.string.title_language),
                     entries = languageEntries,
                     values = languageValues,
                     selectedValue = language,
+                    focusKey = AppConfig.PREF_LANGUAGE,
                     onSelected = {
                         language = it
                         AppLocaleManager.setApplicationLanguage(it)
@@ -309,46 +355,403 @@ fun SettingsScreen(
                         ThemeManager.setThemeMode(it)
                     }
                 )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_vpn_settings),
+                expanded = vpnSettingsExpanded,
+                onExpandedChange = { vpnSettingsExpanded = it }
+            )
+            if (vpnSettingsExpanded) {
                 SettingsSwitchItem(
-                    title = stringResource(R.string.title_pref_dynamic_color),
-                    summary = stringResource(R.string.summary_pref_dynamic_color),
-                    checked = dynamicColor,
-                    enabled = dynamicColorSupported,
+                    title = stringResource(R.string.title_pref_ipv6_enabled),
+                    summary = stringResource(R.string.summary_pref_ipv6_enabled),
+                    checked = ipv6Enabled,
+                    onCheckedChange = { ipv6Enabled = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_prefer_ipv6),
+                    summary = stringResource(R.string.summary_pref_prefer_ipv6),
+                    checked = preferIpv6,
+                    onCheckedChange = { preferIpv6 = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_local_dns_enabled),
+                    summary = stringResource(R.string.summary_pref_local_dns_enabled),
+                    checked = localDns,
+                    enabled = isVpn,
+                    onCheckedChange = { localDns = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_fake_dns_enabled),
+                    summary = stringResource(R.string.summary_pref_fake_dns_enabled),
+                    checked = fakeDns,
+                    enabled = isVpn && localDns,
+                    onCheckedChange = { fakeDns = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_vpn_dns),
+                    value = vpnDns,
+                    enabled = isVpn && !localDns,
+                    onValueChanged = { vpnDns = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_append_http_proxy),
+                    summary = stringResource(R.string.summary_pref_append_http_proxy),
+                    checked = appendHttpProxy,
+                    enabled = effectiveLocalProxy,
+                    onCheckedChange = { appendHttpProxy = it }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.title_pref_vpn_bypass_lan),
+                    entries = bypassLanEntries,
+                    values = bypassLanValues,
+                    selectedValue = vpnBypassLan,
+                    enabled = isVpn,
+                    onSelected = { vpnBypassLan = it }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.title_pref_vpn_interface_address),
+                    entries = interfaceAddrEntries,
+                    values = interfaceAddrValues,
+                    selectedValue = vpnInterfaceAddress,
+                    enabled = isVpn,
+                    onSelected = { vpnInterfaceAddress = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_vpn_mtu),
+                    value = vpnMtu,
+                    enabled = isVpn,
+                    keyboardNumber = true,
+                    onValueChanged = { vpnMtu = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_use_hev_tunnel),
+                    summary = stringResource(R.string.summary_pref_use_hev_tunnel),
+                    checked = useHevTun,
+                    enabled = isVpn,
                     onCheckedChange = {
-                        dynamicColor = it
-                        ThemeManager.setDynamicColorEnabled(it)
+                        useHevTun = it
+                        if (it && !enableLocalProxy) {
+                            enableLocalProxy = true
+                        }
                     }
                 )
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_settings_theme_title),
-                    entries = paletteEntries,
-                    values = paletteValues,
-                    selectedValue = selectedPalette.storage,
-                    onSelected = { storage ->
-                        ThemeManager.setPalette(HamedPaletteId.fromStorage(storage))
+                    title = stringResource(R.string.title_pref_hev_tunnel_loglevel),
+                    entries = hevLogEntries,
+                    values = hevLogValues,
+                    selectedValue = hevTunLogLevel,
+                    enabled = hevTunEnabled,
+                    onSelected = { hevTunLogLevel = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_hev_tunnel_rw_timeout),
+                    value = hevTunRwTimeout,
+                    enabled = hevTunEnabled,
+                    keyboardNumber = true,
+                    onValueChanged = { hevTunRwTimeout = it }
+                )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_core_settings),
+                expanded = coreSettingsExpanded,
+                onExpandedChange = { coreSettingsExpanded = it }
+            )
+            if (coreSettingsExpanded) {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_sniffing_enabled),
+                    summary = stringResource(R.string.summary_pref_sniffing_enabled),
+                    checked = sniffingEnabled,
+                    onCheckedChange = { sniffingEnabled = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_route_only_enabled),
+                    summary = stringResource(R.string.summary_pref_route_only_enabled),
+                    checked = routeOnlyEnabled,
+                    onCheckedChange = { routeOnlyEnabled = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_enable_local_proxy),
+                    summary = stringResource(R.string.summary_pref_enable_local_proxy),
+                    checked = enableLocalProxy,
+                    enabled = !localProxyForced,
+                    onCheckedChange = {
+                        if (!localProxyForced) {
+                            enableLocalProxy = it
+                            if (!it && appendHttpProxy) {
+                                appendHttpProxy = false
+                            }
+                        }
+                    }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_proxy_sharing_enabled),
+                    summary = stringResource(R.string.summary_pref_proxy_sharing_enabled),
+                    checked = proxySharing,
+                    enabled = effectiveLocalProxy,
+                    onCheckedChange = { proxySharing = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_dynamic_socks_port),
+                    summary = stringResource(R.string.summary_pref_dynamic_socks_port),
+                    checked = dynamicSocksPort,
+                    enabled = effectiveLocalProxy,
+                    onCheckedChange = { dynamicSocksPort = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_socks_port),
+                    value = socksPort,
+                    enabled = effectiveLocalProxy && !dynamicSocksPort,
+                    keyboardNumber = true,
+                    onValueChanged = { socksPort = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_socks_username),
+                    value = socksUsername,
+                    enabled = effectiveLocalProxy,
+                    onValueChanged = { socksUsername = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_socks_password),
+                    value = socksPassword,
+                    enabled = effectiveLocalProxy,
+                    isPassword = true,
+                    onValueChanged = { socksPassword = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_socks_enable_udp),
+                    summary = stringResource(R.string.summary_pref_socks_enable_udp),
+                    checked = socksEnableUdp,
+                    enabled = effectiveLocalProxy,
+                    onCheckedChange = { socksEnableUdp = it }
+                )
+                // PattNG: the port every Aether core listens on, the three after it taken as well; it is there with or without the local proxy.
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_aether_listen_port),
+                    value = aetherListenPort,
+                    keyboardNumber = true,
+                    onValueChanged = viewModel::setAetherListenPort
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_remote_dns),
+                    value = remoteDns,
+                    onValueChanged = { remoteDns = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_domestic_dns),
+                    value = domesticDns,
+                    onValueChanged = { domesticDns = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_dns_parallel_query),
+                    summary = stringResource(R.string.summary_dns_parallel_query),
+                    checked = dnsParallelQuery,
+                    onCheckedChange = { dnsParallelQuery = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_dns_serve_stale),
+                    summary = stringResource(R.string.summary_dns_serve_stale),
+                    checked = dnsServeStale,
+                    onCheckedChange = { dnsServeStale = it }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_dns_validate_region),
+                    summary = stringResource(R.string.summary_pref_dns_validate_region),
+                    checked = validateRegion,
+                    onCheckedChange = { validateRegion = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_dns_hosts),
+                    value = dnsHosts,
+                    onValueChanged = { dnsHosts = it }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.title_core_loglevel),
+                    entries = coreLogLevelEntries,
+                    values = coreLogLevelValues,
+                    selectedValue = coreLogLevel,
+                    onSelected = { coreLogLevel = it }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.title_outbound_domain_resolve_method),
+                    entries = outboundResolveEntries,
+                    values = outboundResolveValues,
+                    selectedValue = outboundResolveMethod,
+                    onSelected = { outboundResolveMethod = it }
+                )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_mux_settings),
+                expanded = muxSettingsExpanded,
+                onExpandedChange = { muxSettingsExpanded = it }
+            )
+            if (muxSettingsExpanded) {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_mux_enabled),
+                    summary = stringResource(R.string.summary_pref_mux_enabled),
+                    checked = mux,
+                    onCheckedChange = { mux = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_mux_concurrency),
+                    value = muxConcurrency,
+                    enabled = mux,
+                    keyboardNumber = true,
+                    onValueChanged = { muxConcurrency = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_mux_xudp_concurrency),
+                    value = muxXudpConcurrency,
+                    enabled = mux,
+                    keyboardNumber = true,
+                    onValueChanged = { muxXudpConcurrency = it }
+                )
+                SettingsListItem(
+                    title = stringResource(R.string.title_pref_mux_xudp_quic),
+                    entries = xudpQuicEntries,
+                    values = xudpQuicValues,
+                    selectedValue = muxXudpQuic,
+                    enabled = mux && muxXudpConcurrencyInt >= 0,
+                    onSelected = { muxXudpQuic = it }
+                )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_observatory_settings),
+                expanded = observatorySettingsExpanded,
+                onExpandedChange = { observatorySettingsExpanded = it }
+            )
+            if (observatorySettingsExpanded) {
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_observatory_least_ping_interval),
+                    value = observatoryLeastPingInterval,
+                    onValueChanged = {
+                        viewModel.validateObservatoryDuration(it)?.let { value ->
+                            observatoryLeastPingInterval = value
+                        }
+                    }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_observatory_least_load_interval),
+                    value = observatoryLeastLoadInterval,
+                    onValueChanged = {
+                        viewModel.validateObservatoryDuration(it)?.let { value ->
+                            observatoryLeastLoadInterval = value
+                        }
                     }
                 )
                 SettingsListItem(
-                    title = stringResource(R.string.hamed_settings_font_title),
-                    entries = fontEntries,
-                    values = fontValues,
-                    selectedValue = HamedFontScale.entries.firstOrNull { it.scale == selectedFontScale }
-                        ?.storage ?: HamedFontScale.MEDIUM.storage,
-                    onSelected = { storage ->
-                        ThemeManager.setFontScale(HamedFontScale.fromStorage(storage).scale)
+                    title = stringResource(R.string.title_pref_observatory_least_load_method),
+                    entries = observatoryLeastLoadMethodEntries,
+                    values = observatoryLeastLoadMethodValues,
+                    selectedValue = observatoryLeastLoadMethod,
+                    onSelected = { observatoryLeastLoadMethod = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_observatory_least_load_sampling),
+                    value = observatoryLeastLoadSampling,
+                    keyboardNumber = true,
+                    onValueChanged = {
+                        viewModel.validateObservatorySampling(it)?.let { value ->
+                            observatoryLeastLoadSampling = value
+                        }
                     }
                 )
-                SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_restore_24dp),
-                    title = stringResource(R.string.hamed_settings_tile_layout_title),
-                    subtitle = stringResource(R.string.hamed_settings_tile_layout_summary),
-                    onClick = { MmkvManager.encodeSettings(AppConfig.PREF_HAMED_TILE_LAYOUT, "") }
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_observatory_least_load_timeout),
+                    value = observatoryLeastLoadTimeout,
+                    onValueChanged = {
+                        viewModel.validateObservatoryDuration(it)?.let { value ->
+                            observatoryLeastLoadTimeout = value
+                        }
+                    }
+                )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_advanced),
+                expanded = advancedSettingsExpanded,
+                onExpandedChange = { advancedSettingsExpanded = it }
+            )
+            if (advancedSettingsExpanded) {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_pref_is_booted),
+                    summary = stringResource(R.string.summary_pref_is_booted),
+                    checked = isBooted,
+                    onCheckedChange = { isBooted = it }
+                )
+                if (systemVpnSettingsAvailable) {
+                    SettingsMenuItem(
+                        title = stringResource(R.string.title_system_vpn_settings),
+                        subtitle = stringResource(R.string.summary_system_vpn_settings),
+                        onClick = onSystemVpnSettingsClicked
+                    )
+                }
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_delay_test_url),
+                    value = delayTestUrl,
+                    onValueChanged = { delayTestUrl = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_real_ping_concurrency),
+                    value = realPingConcurrency,
+                    keyboardNumber = true,
+                    onValueChanged = { realPingConcurrency = it }
+                )
+                SettingsEditItem(
+                    title = stringResource(R.string.title_pref_ip_api_url),
+                    value = ipApiUrl,
+                    onValueChanged = { ipApiUrl = it }
+                )
+            }
+
+            CollapsiblePreferenceGroupHeader(
+                title = stringResource(R.string.title_mode_settings),
+                expanded = modeSettingsExpanded,
+                onExpandedChange = { modeSettingsExpanded = it }
+            )
+            if (modeSettingsExpanded) {
+                SettingsListItem(
+                    title = stringResource(R.string.title_mode),
+                    entries = modeEntries,
+                    values = modeValues,
+                    selectedValue = mode,
+                    onSelected = { mode = it }
                 )
                 SettingsMenuItem(
-                    icon = painterResource(R.drawable.ic_about_24dp),
-                    title = stringResource(R.string.title_about),
-                    subtitle = stringResource(R.string.hamed_aether_title),
-                    onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
+                    title = stringResource(R.string.title_mode_help),
+                    onClick = onModeHelpClicked
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_root_mode_enabled),
+                    summary = stringResource(R.string.summary_root_mode_enabled),
+                    checked = enableRootMode,
+                    onCheckedChange = { newValue ->
+                        if (newValue && !RootManager.cachedRoot()) {
+                            viewModel.checkAndRequestRoot {
+                                enableRootMode = true
+                            }
+                        } else {
+                            enableRootMode = newValue
+                        }
+                    }
+                )
+                SettingsSwitchItem(
+                    title = stringResource(R.string.title_root_lan_sharing),
+                    summary = stringResource(R.string.summary_root_lan_sharing),
+                    checked = lanSharing,
+                    onCheckedChange = { newValue ->
+                        if (newValue && !RootManager.cachedRoot()) {
+                            viewModel.checkAndRequestRoot {
+                                lanSharing = true
+                            }
+                        } else {
+                            lanSharing = newValue
+                        }
+                    }
                 )
             }
 

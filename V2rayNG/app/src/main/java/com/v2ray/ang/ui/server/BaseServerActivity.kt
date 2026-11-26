@@ -1,5 +1,7 @@
 package com.v2ray.ang.ui.server
 
+import android.os.Bundle
+import android.view.WindowManager.LayoutParams
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -50,8 +53,10 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
+import com.v2ray.ang.ui.compose.LocalEditorFocus
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.ui.compose.rememberEditorFocus
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +77,15 @@ abstract class BaseServerActivity : BaseComponentActivity() {
      */
     protected val initialConfig: ProfileItem
         get() = checkNotNull(editor.opened.value) { "the profile is read before the screen shows its form" }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            // The previous window's IME state is not valid until the new editor has focus.
+            val adjustment = window.attributes.softInputMode and LayoutParams.SOFT_INPUT_MASK_ADJUST
+            window.setSoftInputMode(adjustment or LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        }
+    }
 
     /** PattNG: the save and the delete, which outlive this activity when it is recreated, see [ServerEditorViewModel]. */
     private val editor: ServerEditorViewModel by viewModels {
@@ -114,6 +128,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
             streamSecurityOptions = stringArrayResource(R.array.streamsecurityxs).toList(),
             uTlsOptions = stringArrayResource(R.array.streamsecurity_utls).toList(),
             alpnOptions = stringArrayResource(R.array.streamsecurity_alpn).toList(),
+            curvePreferencesOptions = stringArrayResource(R.array.curve_preferences).toList(),
             browserDialerOptions = stringArrayResource(R.array.browser_dialer_mode_value).toList()
         )
 
@@ -126,6 +141,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         val streamSecurityOptions: List<String>,
         val uTlsOptions: List<String>,
         val alpnOptions: List<String>,
+        val curvePreferencesOptions: List<String>,
         val browserDialerOptions: List<String>
     )
 
@@ -267,6 +283,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                 { state.finalMask = it }
             )
             CommonDialModeField(state)
+            CommonTcpUserTimeoutField(state)
             if (state.network == NetworkType.WS.type || state.network == NetworkType.XHTTP.type) {
                 FormDropdownField(
                     stringResource(R.string.server_lab_browser_dialer),
@@ -288,6 +305,23 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         )
     }
 
+    /**
+     * PattNG: tcpUserTimeout goes to streamSettings.sockopt like dialMode, after it, but Xray sets it on TCP sockets
+     * alone, so it shows only where the outbound connects over TCP ([ServerUiState.tcpUserTimeoutApplies]); a hidden value
+     * is kept, unused.
+     */
+    @Composable
+    protected fun CommonTcpUserTimeoutField(state: ServerUiState) {
+        if (!state.tcpUserTimeoutApplies) return
+        FormTextField(
+            stringResource(R.string.server_lab_tcp_user_timeout),
+            state.tcpUserTimeout,
+            { state.tcpUserTimeout = it },
+            keyboardType = KeyboardType.Number,
+            placeholder = stringResource(R.string.server_hint_tcp_user_timeout)
+        )
+    }
+
     /** targetStrategy is an option of every Xray outbound, so every protocol offers it. */
     @Composable
     protected fun CommonTargetStrategyField(state: ServerUiState) {
@@ -304,16 +338,24 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         state: ServerUiState,
         options: FieldOptions,
         scope: CoroutineScope,
-        buildProfileItem: () -> ProfileItem
+        buildProfileItem: () -> ProfileItem,
+        showSecuritySelector: Boolean = true,
+        showFingerprint: Boolean = true,
+        showAllowInsecure: Boolean = true,
+        showEchConfigList: Boolean = true,
+        // PattNG: cipherSuites, which MASQUE over HTTP/3 does not use, see CoreOutboundBuilder.toOutboundMasque
+        showCipherSuites: Boolean = true
     ) {
         val context = LocalContext.current
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            FormDropdownField(
-                stringResource(R.string.server_lab_stream_security),
-                state.streamSecurity,
-                options.streamSecurityOptions,
-                { state.streamSecurity = it }
-            )
+            if (showSecuritySelector) {
+                FormDropdownField(
+                    stringResource(R.string.server_lab_stream_security),
+                    state.streamSecurity,
+                    options.streamSecurityOptions,
+                    { state.streamSecurity = it }
+                )
+            }
 
             if (state.streamSecurity.isBlank()) {
                 return@Column
@@ -324,40 +366,62 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                 state.sni,
                 { state.sni = it }
             )
-            FormDropdownField(
-                stringResource(R.string.server_lab_stream_fingerprint),
-                state.fingerPrint,
-                options.uTlsOptions,
-                { state.fingerPrint = it }
-            )
+            if (showFingerprint) {
+                FormDropdownField(
+                    stringResource(R.string.server_lab_stream_fingerprint),
+                    state.fingerPrint,
+                    options.uTlsOptions,
+                    { state.fingerPrint = it }
+                )
+            }
 
             if (state.streamSecurity == TLS) {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.server_lab_allow_insecure),
-                    checked = state.allowInsecure,
-                    onCheckedChange = { state.allowInsecure = it }
-                )
+                if (showAllowInsecure) {
+                    SettingsSwitchItem(
+                        title = stringResource(R.string.server_lab_allow_insecure),
+                        checked = state.allowInsecure,
+                        onCheckedChange = { state.allowInsecure = it }
+                    )
+                }
                 FormDropdownField(
                     stringResource(R.string.server_lab_stream_alpn),
                     state.alpn,
                     options.alpnOptions,
                     { state.alpn = it }
                 )
-                CipherSuitesField(
-                    stringResource(R.string.server_lab_cipher_suites),
-                    state.cipherSuites,
-                    { state.cipherSuites = it }
+                if (showCipherSuites) {
+                    CipherSuitesField(
+                        stringResource(R.string.server_lab_cipher_suites),
+                        state.cipherSuites,
+                        { state.cipherSuites = it }
+                    )
+                }
+                // PattNG: curvePreferences, one of a few lists as alpn is one of a few, and enableSessionResumption,
+                // after cipherSuites
+                FormDropdownField(
+                    stringResource(R.string.server_lab_curve_preferences),
+                    state.curvePreferences,
+                    options.curvePreferencesOptions,
+                    { state.curvePreferences = it }
                 )
-                FormTextField(
-                    stringResource(R.string.server_lab_ech_config_list),
-                    state.echConfigList,
-                    { state.echConfigList = it }
+                SettingsSwitchItem(
+                    title = stringResource(R.string.server_lab_enable_session_resumption),
+                    checked = state.enableSessionResumption,
+                    onCheckedChange = { state.enableSessionResumption = it }
                 )
-                FormTextField(
-                    stringResource(R.string.server_lab_ech_outbound),
-                    state.echOutbound,
-                    { state.echOutbound = it }
-                )
+                if (showEchConfigList) {
+                    FormTextField(
+                        stringResource(R.string.server_lab_ech_config_list),
+                        state.echConfigList,
+                        { state.echConfigList = it }
+                    )
+                    // PattNG: the ECH outbound goes with the echConfigList, see EchOutbound
+                    FormTextField(
+                        stringResource(R.string.server_lab_ech_outbound),
+                        state.echOutbound,
+                        { state.echOutbound = it }
+                    )
+                }
                 FormTextField(
                     stringResource(R.string.server_lab_verify_peer_cert_by_name),
                     state.verifyPeerCertByName,
@@ -400,7 +464,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                         }
                     },
                     enabled = !state.isFetchingCert,
-                    modifier = Modifier.padding(start = 16.dp)
+                    modifier = Modifier.padding(start = 16.dp).then(LocalEditorFocus.current?.target() ?: Modifier)
                 ) {
                     Text(stringResource(R.string.pinned_ca256_action_fetch))
                 }
@@ -498,6 +562,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         val tlsError = when (TlsSettingsCheck.validate(config)) {
             null -> null
             TlsSettingsCheck.Error.CIPHER_SUITES_NEED_UNSAFE -> R.string.toast_cipher_suites_need_unsafe
+            TlsSettingsCheck.Error.CURVE_PREFERENCES_NEED_UNSAFE -> R.string.toast_curve_preferences_need_unsafe
             TlsSettingsCheck.Error.WEBSOCKET_ALPN_NOT_HTTP1 -> R.string.toast_websocket_alpn_http1_only
         }
         if (tlsError != null) {
@@ -530,6 +595,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
     ) {
         var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
         val scrollState = rememberScrollState()
+        val focus = rememberEditorFocus()
         // PattNG: read off the main thread, see ProfileEditorViewModel.isRunning; no delete is offered until it is known.
         val running by editor.isRunning.collectAsStateWithLifecycle()
         EditorOutcomeEffect(
@@ -551,16 +617,21 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                 AppTopBar(
                     title = title,
                     onBackClick = { finish() },
+                    navigationIcon = {
+                        IconButton(onClick = ::finish, modifier = focus.target()) {
+                            Icon(painterResource(R.drawable.ic_arrow_back_24dp), stringResource(R.string.acc_back))
+                        }
+                    },
                     actions = {
                         if (editGuid.isNotEmpty() && running == false) {
-                            IconButton(onClick = { showDeleteDialog = true }) {
+                            IconButton(onClick = { showDeleteDialog = true }, modifier = focus.target()) {
                                 Icon(
                                     painterResource(R.drawable.ic_delete_24dp),
                                     stringResource(R.string.acc_delete)
                                 )
                             }
                         }
-                        IconButton(onClick = onSaveClick) {
+                        IconButton(onClick = onSaveClick, modifier = focus.target()) {
                             Icon(
                                 painterResource(R.drawable.ic_fab_check),
                                 stringResource(R.string.acc_save)
@@ -581,7 +652,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     .padding(bottom = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                content()
+                CompositionLocalProvider(LocalEditorFocus provides focus) { content() }
                 NavigationBarsSpacer()
             }
         }

@@ -84,11 +84,9 @@ object AppConfig {
     const val PREF_AETHER_KEYS_DIAL_MODE = "pref_aether_keys_dial_mode"
     const val PREF_AETHER_KEYS_COMMAND = "pref_aether_keys_command"
 
-    /** Hamed Aether: Global defaults and active overrides for Masque and WireGuard */
+    /** Hamed Aether: Global defaults, dashboard state, and built-in subscriptions */
     const val PREF_AETHER_TRANSPORT = "pref_aether_transport"
     const val PREF_HAMED_BUTTON_POSITION = "pref_hamed_button_position"
-
-    /** Hamed Aether: dashboard tiles, color palette, font scale and ultra-premium connect */
     const val PREF_HAMED_TILE_LAYOUT = "pref_hamed_tile_layout"
     const val PREF_HAMED_PALETTE = "pref_hamed_palette"
     const val PREF_HAMED_FONT_SCALE = "pref_hamed_font_scale"
@@ -113,7 +111,10 @@ object AppConfig {
     const val PREF_AETHER_OBFUSCATION_OVERRIDE = "pref_aether_obfuscation_override"
     const val PREF_REMOTE_DNS = "pref_remote_dns"
     const val PREF_DOMESTIC_DNS = "pref_domestic_dns"
+    const val PREF_DNS_VALIDATE_REGION = "pref_dns_validate_region"
     const val PREF_DNS_HOSTS = "pref_dns_hosts"
+    const val PREF_DNS_PARALLEL_QUERY = "pref_dns_parallel_query"
+    const val PREF_DNS_SERVE_STALE = "pref_dns_serve_stale"
     const val PREF_DELAY_TEST_URL = "pref_delay_test_url"
     const val PREF_IP_API_URL = "pref_ip_api_url"
     const val PREF_LOGLEVEL = "pref_core_loglevel"
@@ -149,6 +150,9 @@ object AppConfig {
 
     /** Messages for a running SubscriptionUpdateService, which a broadcast delivers without starting it. */
     const val BROADCAST_ACTION_SUBSCRIPTION = "$ANG_PACKAGE.action.subscription"
+
+    /** Intent extras. */
+    const val EXTRA_REFRESH_AFTER_IMPORT = "$ANG_PACKAGE.extra.REFRESH_AFTER_IMPORT"
 
     /** Tasker extras. */
     const val TASKER_EXTRA_BUNDLE = "com.twofortyfouram.locale.intent.extra.BUNDLE"
@@ -187,6 +191,19 @@ object AppConfig {
     const val APP_PRIVACY_POLICY = "$GITHUB_RAW_URL/2dust/v2rayNG/master/CR.md"
     const val APP_PROMOTION_URL = "aHR0cHM6Ly85LjIzNDQ1Ni54eXovYWJjLmh0bWw="
     const val TG_CHANNEL_URL = "https://t.me/hamedvpns"
+
+    /** PattNG: the wallets the Donate dialog lists, network and address; an address is copied exactly as written here. */
+    val DONATION_WALLETS = listOf(
+        "USDT (BEP20)" to "0x76a768B53Ca77B43086946315f0BDF21156bF424",
+        "USDT (TRC20)" to "TU5gKvKqcXPn8itp1DouBCwcqGHMemBm8o",
+        "TON (TON)" to "UQAc-mZB3y7uxWHKiMmq0ORZEYgycWDWZ4V1k73HsXvTJx-i",
+        "BTC (BTC)" to "bc1q8cptsn497hlfay6ypaaladldlrjalvx2ah233g"
+    )
+
+    /** PattNG: the author's ID the Donate dialog shows below the wallets, a link to the author's Telegram. */
+    const val AUTHOR_ID = "@patterniha"
+    const val AUTHOR_TELEGRAM_URL = "https://t.me/patterniha"
+
     const val DELAY_TEST_URL = "https://www.gstatic.com/generate_204"
     const val DELAY_TEST_URL2 = "https://www.google.com/generate_204"
     const val OBSERVATORY_LEAST_PING_INTERVAL = "3m"
@@ -239,6 +256,10 @@ object AppConfig {
     const val WIREGUARD_LOCAL_ADDRESS_V6 = "2606:4700:110:8f81:d551:a0:532e:a2b3/128"
     const val WIREGUARD_LOCAL_MTU = "1420"
     const val WIREGUARD_LOCAL_REMOTE_DNS = "1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001"
+    const val MASQUE_LOCAL_ADDRESS_V4 = "172.16.0.2/32"
+    const val MASQUE_LOCAL_ADDRESS_V6 = "2606:4700:110:8a36::2/128"
+    const val MASQUE_LOCAL_REMOTE_DNS = "1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001"
+
     const val LOOPBACK = "127.0.0.1"
 
     /** Shared defaults for settings shown in the UI and consumed by config generation. */
@@ -306,6 +327,7 @@ object AppConfig {
     const val TUIC = "tuic://"
     const val HYSTERIA = "hysteria://"
     const val HYSTERIA2 = "hysteria2://"
+    const val MASQUE = "masque://"
     const val HY2 = "hy2://"
     const val V2RAYNFMTS = "v2rayn://"
     const val AETHER = "aether://"
@@ -319,6 +341,7 @@ object AppConfig {
     const val ROOT_IPTABLES_CHAIN = "CORE_FILTER"
     const val ROOT_FWMARK = 255            // defensive RETURN tag; hev's only upstream socket is loopback (already bypassed)
     const val ROOT_MARK_ROUTE = 1          // packets we want pushed into the tun device
+    const val ROOT_DNS_TETHER_UID = 1052   // AID_DNS_TETHER: netd forwards hotspot clients' DNS under this uid
     const val ROOT_ROUTE_TABLE = 2024
     const val ROOT_RULE_PRIORITY = 1000
     const val ROOT_TUN_NAME = "utun7788"

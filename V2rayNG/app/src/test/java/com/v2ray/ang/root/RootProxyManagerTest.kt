@@ -52,7 +52,7 @@ class RootProxyManagerTest {
         // With the marking in place the setup succeeds whatever a marking step did; otherwise the blackhole's result is
         // the setup's, as with IPv6 off.
         assertEquals(listOf("MARKING", "true", "else", "BLACKHOLE", "fi", ""), lines.drop(1))
-        // No v6 DNS DNAT: some kernels have no ip6tables nat table.
+        // No nat rule of its own: the v6 DNS DNAT comes in the marking, so only where the v6 route is in place.
         assertTrue(lines.none { "-t nat" in it })
     }
 
@@ -106,5 +106,15 @@ class RootProxyManagerTest {
         val credential = "user\nHEVCFG\ntouch /data/local/tmp/injected"
 
         assertEquals("'user\nHEVCFG\ntouch /data/local/tmp/injected'", credential.toSingleQuotedYamlScalar())
+    }
+
+    @Test
+    fun `tether DNS bypasses the hijack only without LAN sharing`() {
+        val tether = "-m owner --uid-owner 1052 -j RETURN"
+        val off = RootProxyManager.buildMangleMarking("iptables", 10100, false, false, emptyList(), false)
+        val on = RootProxyManager.buildMangleMarking("iptables", 10100, false, false, emptyList(), true)
+
+        assertTrue(off.indexOf(tether) in 0 until off.indexOf("--dport 53"))
+        assertFalse(on.contains(tether))
     }
 }

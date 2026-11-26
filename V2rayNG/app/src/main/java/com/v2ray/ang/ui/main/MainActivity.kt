@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -38,6 +39,7 @@ import com.v2ray.ang.ui.server.ServerCustomConfigActivity
 import com.v2ray.ang.ui.server.ServerGroupActivity
 import com.v2ray.ang.ui.server.ServerHttpActivity
 import com.v2ray.ang.ui.server.ServerHysteria2Activity
+import com.v2ray.ang.ui.server.ServerMasqueActivity
 import com.v2ray.ang.ui.server.ServerProxyChainActivity
 import com.v2ray.ang.ui.server.ServerShadowsocksActivity
 import com.v2ray.ang.ui.server.ServerSocksActivity
@@ -54,9 +56,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : HelperBaseComponentActivity() {
+abstract class BaseMainActivity : HelperBaseComponentActivity() {
 
-    private val mainViewModel: MainViewModel by viewModels {
+    private var forwardingToTv = false
+    // Only the existing launcher entry resolves the device type. The TV activity never routes again.
+    protected open fun televisionDestination(): Intent? = null
+
+    protected val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
 
@@ -93,7 +99,14 @@ class MainActivity : HelperBaseComponentActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val destination = televisionDestination()
+        forwardingToTv = destination != null
         super.onCreate(savedInstanceState)
+        if (destination != null) {
+            startActivity(destination)
+            finish()
+            return
+        }
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
@@ -105,31 +118,50 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.RefreshServiceState)
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(AppConfig.EXTRA_REFRESH_AFTER_IMPORT, false)) {
+            mainViewModel.onAction(MainAction.RefreshGroups)
+        }
+    }
+
     @Composable
     override fun ScreenContent() {
+        if (forwardingToTv) return
         BackHandler { moveTaskToBack(false) }
-        HamedAetherScreen(
-            mainViewModel = mainViewModel,
-            onAction = { action ->
-                when (action) {
-                    MainAction.ToggleService -> handleFabAction()
-                    MainAction.TestCurrentServer -> handleLayoutTestClick()
-                    MainAction.ImportQRcode -> importQRcode()
-                    MainAction.ImportClipboard -> importClipboard()
-                    MainAction.ImportConfigLocal -> importConfigLocal()
-                    is MainAction.ImportManually -> importManually(action.type)
-                    MainAction.RestartService -> LauncherManager.restartServiceOrStart(this, ::requestServiceStart)
-                    MainAction.LocateSelectedServer -> mainViewModel.triggerLocateSelectedServer()
-                    is MainAction.SelectServer -> setSelectServer(action.guid)
-                    is MainAction.EditServer -> editServer(action.guid, action.profile)
-                    is MainAction.ShareClipboard -> shareToClipboard(action.guid)
-                    is MainAction.ShareFullContent -> shareFullContentAsync(action.guid)
-                    is MainAction.OpenSubscriptionLink -> openSubscriptionLink(action.url)
-                    else -> mainViewModel.onAction(action)
-                }
-            },
-            onNavigate = { route -> navigateTo(route) },
-        )
+        MainContent(mainViewModel, ::handleMainAction, ::navigateTo)
+    }
+
+    @Composable
+    internal abstract fun MainContent(
+        viewModel: MainViewModel,
+        onAction: (MainAction) -> Unit,
+        onNavigate: (MainDestination) -> Unit
+    )
+
+    private fun handleMainAction(action: MainAction) {
+        when (action) {
+            MainAction.ToggleService -> handleFabAction()
+            MainAction.TestCurrentServer -> handleLayoutTestClick()
+            MainAction.ImportQRcode -> importQRcode()
+            MainAction.ImportClipboard -> importClipboard()
+            MainAction.ImportConfigLocal -> importConfigLocal()
+            is MainAction.ImportManually -> importManually(action.type)
+            MainAction.RestartService -> LauncherManager.restartServiceOrStart(this, ::requestServiceStart)
+            MainAction.LocateSelectedServer -> mainViewModel.triggerLocateSelectedServer()
+            MainAction.Exit -> {
+                LauncherManager.stopService(this)
+                finishAndRemoveTask()
+            }
+            is MainAction.SelectServer -> setSelectServer(action.guid)
+            is MainAction.EditServer -> editServer(action.guid, action.profile)
+            is MainAction.ShareClipboard -> shareToClipboard(action.guid)
+            is MainAction.ShareFullContent -> shareFullContentAsync(action.guid)
+            is MainAction.OpenSubscriptionLink -> openSubscriptionLink(action.url)
+            is MainAction.CopyDonationAddress -> copyDonationAddress(action.address)
+            MainAction.OpenAuthorTelegram -> Utils.openUri(this, AppConfig.AUTHOR_TELEGRAM_URL)
+            else -> mainViewModel.onAction(action)
+        }
     }
 
     private fun shareToClipboard(guid: String): Boolean =
@@ -137,7 +169,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun shareFullContentAsync(guid: String) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val result = AngConfigManager.shareFullContent2Clipboard(this@MainActivity, guid)
+            val result = AngConfigManager.shareFullContent2Clipboard(this@BaseMainActivity, guid)
             withContext(Dispatchers.Main) {
                 if (result == 0) toastSuccess(R.string.toast_success)
                 else toastError(R.string.toast_failure)
@@ -151,6 +183,12 @@ class MainActivity : HelperBaseComponentActivity() {
         Utils.openUri(this, safeUrl)
     }
 
+    /** PattNG: puts a donation address on the clipboard just as the Donate dialog shows it. */
+    private fun copyDonationAddress(address: String) {
+        Utils.setClipboard(this, address)
+        toastSuccess(R.string.toast_success)
+    }
+
     private fun navigateTo(destination: MainDestination) {
         val intent = when (destination) {
             MainDestination.Subscriptions -> Intent(this, SubSettingActivity::class.java)
@@ -162,54 +200,26 @@ class MainActivity : HelperBaseComponentActivity() {
             MainDestination.CheckUpdate -> Intent(this, CheckUpdateActivity::class.java)
             MainDestination.BackupRestore -> Intent(this, BackupActivity::class.java)
             MainDestination.About -> Intent(this, AboutActivity::class.java)
-            MainDestination.Promotion -> {
-                Utils.openUri(
-                    this,
-                    "${Utils.decode(AppConfig.APP_PROMOTION_URL)}?t=${System.currentTimeMillis()}"
-                )
+            MainDestination.TelegramChannel -> {
+                Utils.openUri(this, AppConfig.TG_CHANNEL_URL)
                 return
             }
         }
         settingsActivityLauncher.launch(intent)
     }
 
-    private fun handleFabAction() {
-        val isPreparing = com.v2ray.ang.handler.HamedAetherManager.preparationStatus.value != null
-        val isRunning = mainViewModel.uiState.value.isRunning
-        val isConnecting = mainViewModel.uiState.value.status is MainStatus.Connecting
-
-        if (isPreparing || isRunning || isConnecting) {
-            com.v2ray.ang.handler.HamedAetherManager.cancelPreparation()
+    protected open fun handleFabAction() {
+        if (mainViewModel.uiState.value.isRunning) {
             LauncherManager.stopService(this)
-            com.v2ray.ang.handler.HamedAetherManager.resetTraffic()
-            com.v2ray.ang.handler.HamedAetherManager.resetConnectionInfo()
+            // A service whose process died takes no stop and answers nothing; asking for its state right
+            // after lets that silence show the screen as stopped instead of leaving it connected.
             mainViewModel.onAction(MainAction.RefreshServiceState)
-            return
+        } else {
+            requestServiceStart()
         }
-
-        val locCtx = com.v2ray.ang.handler.AppLocaleManager.localizedContext(this)
-        com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(locCtx.getString(R.string.hamed_prep_connecting))
-        com.v2ray.ang.handler.HamedAetherManager.prepareAndConnect(
-            context = this,
-            ultraPremium = MmkvManager.decodeSettingsBool(AppConfig.PREF_HAMED_ULTRA_PREMIUM, false),
-            onStatusChange = { msg ->
-                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(msg)
-            },
-            onSuccess = { preparedGuid ->
-                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
-                if (mainViewModel.uiState.value.selectedGuid != preparedGuid) {
-                    mainViewModel.onAction(MainAction.SelectServer(preparedGuid))
-                }
-                requestServiceStart()
-            },
-            onError = { err ->
-                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
-                toastError(err)
-            }
-        )
     }
 
-    private fun requestServiceStart() {
+    protected fun requestServiceStart() {
         if (!SettingsManager.isVpnMode()) {
             startV2Ray()
             return
@@ -224,10 +234,10 @@ class MainActivity : HelperBaseComponentActivity() {
         }
     }
 
-    private fun startV2Ray() {
+    protected open fun startV2Ray() {
         if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
-            val guid = com.v2ray.ang.handler.HamedAetherManager.ensureAetherProfile()
-            mainViewModel.onAction(MainAction.SelectServer(guid))
+            toast(R.string.title_file_chooser)
+            return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
         ) {
@@ -248,6 +258,7 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.TROJAN.value -> Intent(this, ServerTrojanActivity::class.java)
             EConfigType.WIREGUARD.value -> Intent(this, ServerWireguardActivity::class.java)
             EConfigType.HYSTERIA2.value -> Intent(this, ServerHysteria2Activity::class.java)
+            EConfigType.MASQUE.value -> Intent(this, ServerMasqueActivity::class.java)
             EConfigType.AETHER.value -> Intent(this, ServerAetherActivity::class.java)
             else -> Intent(this, ServerHttpActivity::class.java).apply {
                 putExtra("createConfigType", createConfigType)
@@ -290,7 +301,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun editServer(guid: String, profile: ProfileItem) {
         val activityClass = when (profile.configType) {
-            EConfigType.CUSTOM -> ServerCustomConfigActivity::class.java
+            EConfigType.CUSTOM, EConfigType.CUSTOM_OUTBOUND -> ServerCustomConfigActivity::class.java
             EConfigType.POLICYGROUP -> ServerGroupActivity::class.java
             EConfigType.PROXYCHAIN -> ServerProxyChainActivity::class.java
             EConfigType.VMESS -> ServerVmessActivity::class.java
@@ -301,6 +312,7 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.TROJAN -> ServerTrojanActivity::class.java
             EConfigType.WIREGUARD -> ServerWireguardActivity::class.java
             EConfigType.HYSTERIA2 -> ServerHysteria2Activity::class.java
+            EConfigType.MASQUE -> ServerMasqueActivity::class.java
             EConfigType.AETHER -> ServerAetherActivity::class.java
             else -> ServerHttpActivity::class.java
         }
@@ -319,6 +331,66 @@ class MainActivity : HelperBaseComponentActivity() {
             mainViewModel.updateSelectedGuid(guid)
             LauncherManager.restartService(this)
         }
+    }
+
+}
+
+/** Keep the existing launcher, notification, and shortcut target stable. */
+class MainActivity : BaseMainActivity() {
+    override fun televisionDestination(): Intent? {
+        val isTelevision = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK == Configuration.UI_MODE_TYPE_TELEVISION
+        // PattNG: with the extras of the intent, so that an import's refresh (EXTRA_REFRESH_AFTER_IMPORT) reaches an open
+        // TV screen too, as it does the phone one.
+        return if (isTelevision) Intent(this, TvMainActivity::class.java).putExtras(intent) else null
+    }
+
+    override fun handleFabAction() {
+        val isPreparing = com.v2ray.ang.handler.HamedAetherManager.preparationStatus.value != null
+        val isRunning = mainViewModel.uiState.value.isRunning
+        val isConnecting = mainViewModel.uiState.value.status is MainStatus.Connecting
+
+        if (isPreparing || isRunning || isConnecting) {
+            com.v2ray.ang.handler.HamedAetherManager.cancelPreparation()
+            LauncherManager.stopService(this)
+            com.v2ray.ang.handler.HamedAetherManager.resetTraffic()
+            com.v2ray.ang.handler.HamedAetherManager.resetConnectionInfo()
+            mainViewModel.onAction(MainAction.RefreshServiceState)
+            return
+        }
+
+        val locCtx = com.v2ray.ang.handler.AppLocaleManager.localizedContext(this)
+        com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(locCtx.getString(R.string.hamed_prep_connecting))
+        com.v2ray.ang.handler.HamedAetherManager.prepareAndConnect(
+            context = this,
+            ultraPremium = MmkvManager.decodeSettingsBool(AppConfig.PREF_HAMED_ULTRA_PREMIUM, false),
+            onStatusChange = { status ->
+                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(status)
+            },
+            onSuccess = { preparedGuid ->
+                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
+                if (mainViewModel.uiState.value.selectedGuid != preparedGuid) {
+                    mainViewModel.updateSelectedGuid(preparedGuid)
+                }
+                requestServiceStart()
+            },
+            onError = { err ->
+                com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
+                toastError(err)
+            }
+        )
+    }
+
+    override fun startV2Ray() {
+        if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
+            val guid = com.v2ray.ang.handler.HamedAetherManager.ensureAetherProfile()
+            mainViewModel.updateSelectedGuid(guid)
+        }
+        super.startV2Ray()
+    }
+
+    @Composable
+    override fun MainContent(viewModel: MainViewModel, onAction: (MainAction) -> Unit, onNavigate: (MainDestination) -> Unit) {
+        HamedAetherScreen(viewModel, onAction, onNavigate)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

@@ -4,10 +4,14 @@ import android.app.Application
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.entities.AssetUrlCache
 import com.v2ray.ang.dto.entities.AssetUrlItem
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import java.io.File
+import java.nio.file.Files
 
 class UserAssetViewModelTest {
     private val viewModel = UserAssetViewModel(mock(Application::class.java))
@@ -49,11 +53,61 @@ class UserAssetViewModelTest {
     }
 
     @Test
+    fun replaceAssetFileMovesTempFileIntoPlace() {
+        val dir = Files.createTempDirectory("v2rayng-asset-").toFile()
+        try {
+            val temp = File(dir, "asset_temp").apply { writeText("new") }
+            val target = File(dir, "asset")
+
+            assertTrue(viewModel.replaceAssetFile(temp, target))
+            assertEquals("new", target.readText())
+            assertFalse(temp.exists())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun replaceAssetFileReportsFailureAndRemovesTempFile() {
+        val dir = Files.createTempDirectory("v2rayng-asset-").toFile()
+        try {
+            val temp = File(dir, "asset_temp").apply { writeText("new") }
+            val target = File(File(dir, "missing"), "asset")
+
+            assertFalse(viewModel.replaceAssetFile(temp, target))
+            assertFalse(temp.exists())
+            assertFalse(target.exists())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun aSavedPsiphonListReplacesTheBuiltInOne() {
         val mirror = AssetUrlCache("mirror-guid", AssetUrlItem(AppConfig.PSIPHON_SERVERS_DAT, "https://example.invalid/server_list_compressed"))
         val rows = viewModel.buildAssetList(listOf(mirror), "source")
 
         assertEquals(mirror, rows.single { it.assetUrl.remarks == AppConfig.PSIPHON_SERVERS_DAT })
         assertEquals(3, rows.count { it.assetUrl.locked == true })
+    }
+
+    @Test
+    fun downloadGeoFilesUpdatesDownloadingItemStateAndResets() {
+        val dir = Files.createTempDirectory("v2rayng-asset-test-").toFile()
+        try {
+            val progressItems = mutableListOf<String>()
+            val downloadingStates = mutableListOf<String?>()
+            runBlocking {
+                viewModel.downloadGeoFiles(dir, 0) { remarks ->
+                    progressItems.add(remarks)
+                    downloadingStates.add(viewModel.uiState.value.downloadingItem)
+                }
+            }
+            assertEquals(viewModel.uiState.value.assets.map { it.assetUrl.remarks }, progressItems)
+            assertEquals(progressItems, downloadingStates)
+            assertEquals(null, viewModel.uiState.value.downloadingItem)
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 }

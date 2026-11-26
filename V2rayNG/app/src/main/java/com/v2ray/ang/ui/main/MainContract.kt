@@ -26,11 +26,11 @@ data class MainUiState(
     val isRunning: Boolean = false,
     val isTesting: Boolean = false,
     val status: MainStatus = MainStatus.Disconnected,
+    val searchQuery: String = "",
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
     val shareQRCodeBitmap: android.graphics.Bitmap? = null,
-    /** PattNG: bumped on every daemon start failure; a rising count asks the dashboard to shake. */
     val connectionErrorCount: Long = 0,
     /**
      * PattNG: a move of a profile the storage refused, still to be told, by a number of its own, so that a refusal set
@@ -83,9 +83,15 @@ sealed interface MainAction {
     data object DismissQRCodeDialog : MainAction
     data class OpenSubscriptionLink(val url: String) : MainAction
 
+    /** PattNG: the Donate dialog's copy button of [address], one of AppConfig.DONATION_WALLETS. */
+    data class CopyDonationAddress(val address: String) : MainAction
+    /** PattNG: the Donate dialog's link of the author's ID, AppConfig.AUTHOR_TELEGRAM_URL. */
+    data object OpenAuthorTelegram : MainAction
+
     data class ImportBatchConfig(val configText: String) : MainAction
 
-    data object LocateHandled : MainAction
+    data class LocateHandled(val target: LocateTarget) : MainAction
+    data object Exit : MainAction
 
     /** PattNG: the refusal of a move numbered [refusal], see [MainUiState.moveRefusal], was told. */
     data class MoveRefusalShown(val refusal: Int) : MainAction

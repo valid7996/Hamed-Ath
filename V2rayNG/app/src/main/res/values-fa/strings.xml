@@ -939,4 +939,36 @@
     <string name="hamed_mitm_cert_install">نصب گواهی</string>
     <string name="hamed_mitm_cert_install_failed">باز کردن نصب‌کننده گواهی ناموفق بود</string>
 
+
+    <!-- Upstream Patterniha additions -->
+    <string name="menu_item_import_config_manually_masque">افزودن [MASQUE]</string>
+    <string name="server_lab_request_host_masque">هاست MASQUE</string>
+    <string name="server_lab_path_masque">مسیر MASQUE</string>
+    <string name="server_lab_curve_preferences">منحنی‌های ترجیحی (Curve Preferences)</string>
+    <string name="server_lab_enable_session_resumption">ازسرگیری نشست (Enable Session Resumption)</string>
+    <string name="toast_curve_preferences_need_unsafe">curvePreferences فقط با fingerprint از نوع unsafe اعمال می‌شود. unsafe را انتخاب کنید یا curvePreferences را خالی کنید.</string>
+    <string name="server_lab_local_address_hint">اگر خالی باشد، به‌طور پیش‌فرض از %1$s استفاده می‌شود. آدرس‌های IPv6 فقط زمانی استفاده می‌شوند که IPv6 فعال باشد.</string>
+    <string name="server_lab_masque_warp_settings">WARP</string>
+    <string name="server_lab_masque_warp_private_key">کلید خصوصی WARP</string>
+    <string name="server_lab_masque_warp_public_key">کلید عمومی WARP</string>
+    <string name="server_obfs_type">نوع مبهم‌سازی</string>
+    <string name="server_lab_min_packet_size">حداقل اندازه بسته (اختیاری، پیش‌فرض 512)</string>
+    <string name="server_lab_max_packet_size">حداکثر اندازه بسته (اختیاری، پیش‌فرض 1200)</string>
+    <string name="server_lab_tcp_user_timeout" translatable="false">tcpUserTimeout</string>
+    <string name="server_hint_tcp_user_timeout">میلی‌ثانیه (مثلا 10000). خالی = پیش‌فرض سیستم.</string>
+    <string name="aether_lab_exit_tcp_user_timeout" translatable="false">exit-node tcpUserTimeout</string>
+    <string name="title_pref_dns_validate_region">Validate Region</string>
+    <string name="summary_pref_dns_validate_region">Check the region of local DNS results and fall back to remote DNS on mismatch.</string>
+    <string name="title_dns_parallel_query">DNS Parallel Query</string>
+    <string name="summary_dns_parallel_query">Query multiple DNS servers in parallel and use the fastest response.</string>
+    <string name="title_dns_serve_stale">DNS Serve Stale</string>
+    <string name="summary_dns_serve_stale">When enabled, reduces DNS lookup waits; expired results are still used while the latest result is fetched.</string>
+    <string name="title_donate">حمایت مالی</string>
+    <string name="acc_copy_address">کپی نشانی %1$s</string>
+    <string name="action_exit">خروج</string>
+    <string name="action_back">بازگشت</string>
+    <string name="action_more">بیشتر</string>
+    <string name="action_clear">پاک کردن</string>
+    <string name="connection_connected_tv">متصل است</string>
+
 </resources>

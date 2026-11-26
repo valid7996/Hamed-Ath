@@ -21,7 +21,6 @@ import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.dto.entities.AssetUrlCache
 import com.v2ray.ang.dto.entities.AssetUrlItem
 import com.v2ray.ang.dto.entities.ProfileItem
-import com.v2ray.ang.extension.isGroupType
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.dto.entities.RulesetItem
 import com.v2ray.ang.dto.entities.ServerAffiliationInfo
@@ -29,6 +28,7 @@ import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.dto.entities.SubscriptionUsageInfo
 import com.v2ray.ang.dto.entities.WebDavConfig
+import com.v2ray.ang.extension.moveGuid
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -221,6 +221,15 @@ object MmkvManager {
         }
     }
 
+    /** Reorder the complete stored index without replacing it with a filtered or stale UI snapshot. */
+    internal fun moveServerInGroup(groupId: String, fromGuid: String, toGuid: String): List<String>? =
+        withProfileIndexLock {
+            val order = decodeServerList(groupId)
+            if (!order.moveGuid(fromGuid, toGuid)) return@withProfileIndexLock null
+            requireStorageWrite(persistServerList(order, groupId), "Failed to save profile order")
+            order
+        }
+
 
     /**
      * Decodes the server list for a given subscription.
@@ -388,9 +397,10 @@ object MmkvManager {
             val serverList = if (append) {
                 decodeServerList(subscriptionId)
             } else {
-                replacedServers.filter { guid ->
-                    decodeServerConfig(guid)?.configType?.isGroupType() == true
-                }.toMutableList()
+                ProfileReplacement.findKeptGroups(
+                    replacedProfiles = replacedServers.associateWith(::decodeServerConfig),
+                    profiles = profiles.values,
+                ).toMutableList()
             }
             val indexedServers = serverList.toHashSet()
             profiles.keys.forEach { guid ->
@@ -1193,14 +1203,7 @@ object MmkvManager {
      * @return The settings value.
      */
     fun decodeSettingsBool(key: String, defaultValue: Boolean): Boolean {
-        val effectiveDefault = if (key == AppConfig.PREF_SPEED_ENABLED && !settingsStorage.containsKey(key)) {
-            true
-        } else if (key == AppConfig.PREF_AETHER_FRAGMENT_ENABLED) {
-            false
-        } else {
-            defaultValue
-        }
-        return settingsStorage.decodeBool(key, effectiveDefault)
+        return settingsStorage.decodeBool(key, defaultValue)
     }
 
     /**

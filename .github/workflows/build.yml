@@ -38,7 +38,7 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: false
         cmdline-tools-version: '14742923'
-        packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+        packages: 'platforms;android-37.1 build-tools;37.0.0 platform-tools'
 
     - name: Install NDK
       run: |
@@ -174,7 +174,7 @@ jobs:
         out-file-path: V2rayNG/app/libs/
 
     - name: Setup Java
-      uses: actions/setup-java@v6.1.0
+      uses: actions/setup-java@v6.3.0
       with:
         distribution: 'temurin'
         java-version: '21'
@@ -219,11 +219,11 @@ jobs:
         ./gradlew testFdroidDebugUnitTest \
           --tests "com.v2ray.ang.core.*" \
           --tests "com.v2ray.ang.handler.*" \
-          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.6' }}" \
           --no-daemon \
           --stacktrace
         ./gradlew assembleRelease \
-          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.6' }}" \
           -Pandroid.injected.signing.store.file="${{ steps.android_keystore.outputs.filePath }}" \
           -Pandroid.injected.signing.store.password="${{ steps.android_keystore.outputs.storePassword }}" \
           -Pandroid.injected.signing.key.alias="${{ steps.android_keystore.outputs.keyAlias }}" \
@@ -260,18 +260,17 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.5
-        name: Hamed Aether v1.0.5 (Official Signed Release)
+        tag_name: v1.0.6
+        name: Hamed Aether v1.0.6 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.5** (Non-Debug, Keystore Signed)
+          Official Production Release of **Hamed Aether v1.0.6** (Non-Debug, Keystore Signed)
+          - Upstream Core & Engine Sync (Patterniha 2.4.1 / Xray v26.11.24):
+            1. Updated **AndroidLibXrayLite to v26.11.24** (`Xray-core` with full `Serverless v65` & `MITM-DomainFronting v24` `tls-repack`, `tcp-oob`, `tcpUserTimeout`, and DNS region/parallel/stale support).
+            2. Updated **hev-socks5-tunnel to 2.20.0** & core builders (`MASQUE`, `CustomOutbound`, `ProfileEntry`).
           - Built-in Synced Subscriptions on Connection Dashboard:
-            1. **Serverless** (`Patterniha-S`) — built-in fragment/anti-censorship profiles synced directly to the dashboard.
-            2. **MITM-DomainFronting** (`Patterniha-M`) — built-in domain fronting profiles with automatic on-device Root CA generation & one-tap Android CA install.
-            3. **Patterniha Free Configs** — synced community nodes selectable right from the dashboard.
-          - Universal Psiphon & Tor Chaining:
-            * Chain **Psiphon** (with exit country selection) or **Tor** on top of Serverless, MITM-DomainFronting, Patterniha nodes, and Aether protocols.
-          - Version Sync Fix:
-            * Unified Gradle `versionName`, `versionCode`, About screen, Update Checker, and APK release filenames (`v1.0.5`).
+            * **Serverless** (`Patterniha-S`), **MITM-DomainFronting** (`Patterniha-M` with auto on-device Root CA generation), and **Patterniha Free Configs**.
+            * Universal **Psiphon** (with exit country selector) and **Tor** chaining across all subscriptions and Aether protocols.
+          - Version Sync (`v1.0.6`).
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         fail_on_unmatched_files: true
         prerelease: false

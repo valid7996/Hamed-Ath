@@ -10,7 +10,7 @@ import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.ui.compose.AppDropdownMenuItems
 import com.v2ray.ang.ui.compose.SelectListDialog
 
-private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: MainAction) {
+internal enum class ImportMenuAction(@StringRes val labelRes: Int, val action: MainAction) {
     QRCode(R.string.menu_item_import_config_qrcode, MainAction.ImportQRcode),
     Clipboard(R.string.menu_item_import_config_clipboard, MainAction.ImportClipboard),
     LocalFile(R.string.menu_item_import_config_local, MainAction.ImportConfigLocal),
@@ -24,6 +24,7 @@ private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: Ma
     Trojan(R.string.menu_item_import_config_manually_trojan, MainAction.ImportManually(EConfigType.TROJAN.value)),
     WireGuard(R.string.menu_item_import_config_manually_wireguard, MainAction.ImportManually(EConfigType.WIREGUARD.value)),
     Hysteria2(R.string.menu_item_import_config_manually_hysteria2, MainAction.ImportManually(EConfigType.HYSTERIA2.value)),
+    Masque(R.string.menu_item_import_config_manually_masque, MainAction.ImportManually(EConfigType.MASQUE.value)),
     Aether(R.string.menu_item_import_config_manually_aether, MainAction.ImportManually(EConfigType.AETHER.value))
 }
 
@@ -91,14 +92,18 @@ fun ShareMethodDialog(
         optionText = { stringResource(it.labelRes) },
         onSelected = { action ->
             onDismiss()
-            when (action) {
-                ServerMenuAction.ShareQRCode -> onAction(MainAction.ShareQRCode(guid))
-                ServerMenuAction.ShareClipboard -> onAction(MainAction.ShareClipboard(guid))
-                ServerMenuAction.ShareFullContent -> onAction(MainAction.ShareFullContent(guid))
-                ServerMenuAction.Edit -> onAction(MainAction.EditServer(guid, profile))
-                ServerMenuAction.Delete -> onRemove(guid, profile.remarks)
-            }
+            action.dispatch(guid, profile, onAction, onRemove)
         },
         onDismiss = onDismiss
     )
+}
+
+internal fun ServerMenuAction.dispatch(guid: String, profile: ProfileItem, onAction: (MainAction) -> Unit, onRemove: (String, String) -> Unit) {
+    when (this) {
+        ServerMenuAction.ShareQRCode -> onAction(MainAction.ShareQRCode(guid))
+        ServerMenuAction.ShareClipboard -> onAction(MainAction.ShareClipboard(guid))
+        ServerMenuAction.ShareFullContent -> onAction(MainAction.ShareFullContent(guid))
+        ServerMenuAction.Edit -> onAction(MainAction.EditServer(guid, profile))
+        ServerMenuAction.Delete -> onRemove(guid, profile.remarks)
+    }
 }

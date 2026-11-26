@@ -23,10 +23,31 @@ class V2rayNShareItemTest {
             V2rayNShareItem::class.java,
         )
 
-        val profile = item.toProfileItem()
+        val profile = item.toProfileItem()!!
 
         assertEquals(EConfigType.VLESS, profile.configType)
         assertEquals("cloudflare-ech.com+https://1.1.1.1/dns-query", profile.echConfigList)
         assertEquals(echOutbound, profile.echOutbound)
+    }
+
+    @Test
+    fun toProfileItem_readsTheCurvePreferencesAndSessionResumptionThatPattNShares() {
+        // PattN shares ProfileItem.CurvePreferences and EnableSessionResumption under these names, after CipherSuites.
+        val item = Gson().fromJson(
+            """
+            {
+              "ConfigType": 5, "Address": "example.com", "Port": 443, "Network": "raw", "StreamSecurity": "tls",
+              "Fingerprint": "unsafe", "CipherSuites": "TLS_AES_128_GCM_SHA256",
+              "CurvePreferences": "X25519MLKEM768,X25519", "EnableSessionResumption": true
+            }
+            """,
+            V2rayNShareItem::class.java,
+        )
+
+        val profile = item.toProfileItem()!!
+
+        assertEquals("TLS_AES_128_GCM_SHA256", profile.cipherSuites)
+        assertEquals("X25519MLKEM768,X25519", profile.curvePreferences)
+        assertEquals(true, profile.enableSessionResumption)
     }
 }

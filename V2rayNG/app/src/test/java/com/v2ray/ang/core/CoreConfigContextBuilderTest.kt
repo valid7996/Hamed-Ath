@@ -1,5 +1,6 @@
 package com.v2ray.ang.core
 
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.ByName
 import com.v2ray.ang.dto.CoreConfigContext
@@ -12,13 +13,16 @@ import com.v2ray.ang.dto.CoreConfigContext.UnresolvedName.Reason.NO_SERVER
 import com.v2ray.ang.dto.CoreConfigContext.UnresolvedName.Reason.NOT_FOUND
 import com.v2ray.ang.dto.CoreConfigContext.UnresolvedName.Reason.SEVERAL
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.dto.entities.RulesetItem
 import com.v2ray.ang.enums.AetherProtocol
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.util.JsonUtil
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class CoreConfigContextBuilderTest {
 
@@ -33,7 +37,7 @@ class CoreConfigContextBuilderTest {
         val same = aether("warp again", AetherProtocol.MASQUE)
         val other = aether("wg", AetherProtocol.WIREGUARD)
 
-        val (kept, leftOut) = CoreConfigContextBuilder.withOneAetherProfile(listOf(vless, first, other, same))
+        val (kept, leftOut) = CoreConfigContextBuilder.withOneAetherProfile(listOf(vless, first, other, same)) { it }
 
         assertEquals(listOf(vless, first, same), kept)
         assertEquals(listOf(other), leftOut)
@@ -45,7 +49,7 @@ class CoreConfigContextBuilderTest {
         val first = aether("warp", AetherProtocol.MASQUE)
         val elsewhere = aether("warp on 20808", AetherProtocol.MASQUE).apply { aetherListenPort = "20808" }
 
-        val (kept, leftOut) = CoreConfigContextBuilder.withOneAetherProfile(listOf(first, elsewhere))
+        val (kept, leftOut) = CoreConfigContextBuilder.withOneAetherProfile(listOf(first, elsewhere)) { it }
 
         assertEquals(listOf(first, elsewhere), kept)
         assertEquals(emptyList<ProfileItem>(), leftOut)
@@ -53,8 +57,8 @@ class CoreConfigContextBuilderTest {
 
     @Test
     fun aGroupWithoutAetherIsUnchanged() {
-        assertEquals(listOf(vless) to emptyList<ProfileItem>(), CoreConfigContextBuilder.withOneAetherProfile(listOf(vless)))
-        assertEquals(emptyList<ProfileItem>() to emptyList<ProfileItem>(), CoreConfigContextBuilder.withOneAetherProfile(emptyList()))
+        assertEquals(listOf(vless) to emptyList<ProfileItem>(), CoreConfigContextBuilder.withOneAetherProfile(listOf(vless)) { it })
+        assertEquals(emptyList<ProfileItem>() to emptyList<ProfileItem>(), CoreConfigContextBuilder.withOneAetherProfile(emptyList<ProfileItem>()) { it })
     }
 
     @Test
@@ -108,6 +112,7 @@ class CoreConfigContextBuilderTest {
             profile("group", EConfigType.POLICYGROUP),
             profile("chain", EConfigType.PROXYCHAIN),
             profile("custom", EConfigType.CUSTOM),
+            profile("outbound", EConfigType.CUSTOM_OUTBOUND),
             profile("shared", EConfigType.POLICYGROUP),
             shared,
         )
@@ -120,27 +125,49 @@ class CoreConfigContextBuilderTest {
         // A chain or a custom configuration cannot be a hop either, and is told by what it is.
         assertEquals(CoreConfigContext.UnresolvedName("chain", CHAIN_AS_HOP), hops("chain").second)
         assertEquals(CoreConfigContext.UnresolvedName("custom", CUSTOM_AS_HOP), hops("custom").second)
+        // A custom outbound, as upstream leaves it out of chains, is told as a custom configuration.
+        assertEquals(CoreConfigContext.UnresolvedName("outbound", CUSTOM_AS_HOP), hops("outbound").second)
         // A name no profile has is told as before.
         assertEquals(CoreConfigContext.UnresolvedName("gone", NOT_FOUND), hops("gone").second)
         // A group of the name stands aside for the one profile of it that can be a hop.
         assertEquals(listOf(shared) to null, hops("shared"))
     }
 
+    // PattNG: before upstream #6438 PattNG wrote the names of a chain into proxyChainProfiles, a comma or a backslash
+    // inside a name after a backslash; such a chain moves into proxyChainProfileList with its names whole.
     @Test
-    fun aChainKeepsACommaOrABackslashInsideTheNameOfAHop() {
+    @Suppress("DEPRECATION")
+    fun aChainStoredTheOldWayMovesIntoTheListWithItsNamesWhole() {
         val names = listOf("US, Dallas", "Exit", """back\slash""", """a\,b""", "")
-        assertEquals(names, ProfileItem.proxyChainMembersOf(ProfileItem.proxyChainProfilesOf(names)))
-        // A name with neither is written as before, and a chain written before reads as it did.
-        assertEquals("entry,warp,exit", ProfileItem.proxyChainProfilesOf(listOf("entry", "warp", "exit")))
+        val written = """US\, Dallas,Exit,back\\slash,a\\\,b,"""
+        assertEquals(names, ProfileItem.proxyChainMembersOf(written))
+        // A chain written before the escaping, whose names had no backslash, reads as it did, nothing trimmed.
         assertEquals(listOf("entry", " warp", "exit"), ProfileItem.proxyChainMembersOf("entry, warp,exit"))
         assertEquals(listOf("""a\b"""), ProfileItem.proxyChainMembersOf("""a\b"""))
         assertEquals(emptyList<String>(), ProfileItem.proxyChainMembersOf(null))
         assertEquals(emptyList<String>(), ProfileItem.proxyChainMembersOf(""))
+
+        val chain = ProfileItem.create(EConfigType.PROXYCHAIN).apply { proxyChainProfiles = written }
+        // Not moved yet, as after a backup of an older PattNG is restored: its names read all the same.
+        assertEquals(names, chain.proxyChainMembers())
+        assertTrue(chain.moveLegacyProxyChain())
+        assertEquals(names, chain.proxyChainProfileList)
+        assertNull(chain.proxyChainProfiles)
+        assertEquals(names, chain.proxyChainMembers())
+        // Moved once, it has nothing more to move; and a chain that has the list keeps it.
+        assertFalse(chain.moveLegacyProxyChain())
+        val listed = ProfileItem.create(EConfigType.PROXYCHAIN).apply {
+            proxyChainProfileList = listOf("entry", "exit")
+            proxyChainProfiles = "old,names"
+        }
+        assertFalse(listed.moveLegacyProxyChain())
+        assertEquals(listOf("entry", "exit"), listed.proxyChainMembers())
+        assertEquals(emptyList<String>(), ProfileItem.create(EConfigType.PROXYCHAIN).proxyChainMembers())
+
         // The hops of such a chain are found by their whole names.
         val dallas = vless.copy(remarks = "US, Dallas")
         val profiles = listOf(vless, dallas).associateBy { it.remarks }
-        val stored = ProfileItem.proxyChainProfilesOf(listOf("US, Dallas", "vless"))
-        assertEquals(listOf(dallas, vless) to null, CoreConfigContextBuilder.proxyChainHops(ProfileItem.proxyChainMembersOf(stored)) { name, _ ->
+        assertEquals(listOf(dallas, vless) to null, CoreConfigContextBuilder.proxyChainHops(listOf("US, Dallas", "vless")) { name, _ ->
             profiles[name]?.let { ByName.One(it) } ?: ByName.None
         })
     }
@@ -224,8 +251,8 @@ class CoreConfigContextBuilderTest {
             ProfileItem.create(EConfigType.POLICYGROUP).apply { remarks = "shared" },
         )
         val find = { name: String, takes: (ProfileItem) -> Boolean -> ByName.find(name, shared.asSequence().filter(takes)) { it.remarks } }
-        assertEquals(GROUP_AS_HOP, CoreConfigContextBuilder.reasonByType("shared", CoreConfigContextBuilder.HOP_REASONS, find))
-        assertNull(CoreConfigContextBuilder.reasonByType("gone", CoreConfigContextBuilder.HOP_REASONS, find))
+        assertEquals(GROUP_AS_HOP, CoreConfigContextBuilder.reasonByType("shared", CoreConfigContextBuilder.HOP_REASONS, find) { it })
+        assertNull(CoreConfigContextBuilder.reasonByType("gone", CoreConfigContextBuilder.HOP_REASONS, find) { it })
     }
 
     @Test
@@ -260,5 +287,43 @@ class CoreConfigContextBuilderTest {
         assertNull(CoreConfigContextBuilder.fallbackNameOf(group("   ")))
         assertNull(CoreConfigContextBuilder.fallbackNameOf(group("")))
         assertNull(CoreConfigContextBuilder.fallbackNameOf(group(null)))
+    }
+
+    @Test
+    fun theDnsRegionIsThatOfTheLastTwoRulesWhenEachHoldsItAlone() {
+        fun rule(ip: List<String>? = null, domain: List<String>? = null) =
+            RulesetItem(ip = ip, domain = domain, outboundTag = AppConfig.TAG_DIRECT)
+        fun regionOf(vararg rules: RulesetItem) = CoreConfigContextBuilder.calculateRoutingRegionForDns(rules.toList())
+        assertEquals(
+            "cn",
+            regionOf(rule(domain = listOf("geosite:private")), rule(ip = listOf("geoip:cn")), rule(domain = listOf("geosite:cn"))),
+        )
+        // Two regions, an IP or domain other than a region's, the rules the other way round: none.
+        assertNull(regionOf(rule(ip = listOf("geoip:cn")), rule(domain = listOf("geosite:ru"))))
+        assertNull(regionOf(rule(ip = listOf("10.0.0.0/8")), rule(domain = listOf("10.0.0.0/8"))))
+        assertNull(regionOf(rule(domain = listOf("geosite:cn")), rule(ip = listOf("geoip:cn"))))
+        // A rule with more than the region, or with an empty list, is none either. Upstream counted the first entry of
+        // a list of two, and threw on an empty one, which failed every configuration.
+        assertNull(
+            regionOf(rule(ip = listOf("geoip:cn", "geoip:private")), rule(domain = listOf("geosite:cn", "geosite:private")))
+        )
+        assertNull(regionOf(rule(ip = listOf("geoip:cn")), rule(domain = emptyList())))
+        assertNull(regionOf(rule(ip = emptyList()), rule(domain = listOf("geosite:cn"))))
+        // Fewer than two rules, or none stored.
+        assertNull(regionOf(rule(domain = listOf("geosite:cn"))))
+        assertNull(CoreConfigContextBuilder.calculateRoutingRegionForDns(null))
+    }
+
+    @Test
+    fun theChinaPresetAloneHasADnsRegion() {
+        fun regionOf(preset: String) = CoreConfigContextBuilder.calculateRoutingRegionForDns(
+            JsonUtil.fromJson(File("src/main/assets/$preset").readText(), Array<RulesetItem>::class.java)!!.toList()
+        )
+        assertEquals("cn", regionOf("custom_routing_white"))
+        // The Iran and Russia presets end with their domains, then their IPs.
+        val others = listOf("custom_routing_white_iran", "custom_routing_white_russia", "custom_routing_black", "custom_routing_global")
+        for (preset in others) {
+            assertNull(regionOf(preset), preset)
+        }
     }
 }

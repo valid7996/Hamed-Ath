@@ -975,4 +975,36 @@
     <string name="hamed_mitm_cert_install">Install CA</string>
     <string name="hamed_mitm_cert_install_failed">Could not open CA certificate installer</string>
 
+
+    <!-- Upstream Patterniha additions -->
+    <string name="menu_item_import_config_manually_masque">Add [MASQUE]</string>
+    <string name="server_lab_request_host_masque">MASQUE host</string>
+    <string name="server_lab_path_masque">MASQUE path</string>
+    <string name="server_lab_curve_preferences">Curve Preferences</string>
+    <string name="server_lab_enable_session_resumption">Enable Session Resumption</string>
+    <string name="toast_curve_preferences_need_unsafe">curvePreferences only apply with the unsafe fingerprint. Choose unsafe, or clear curvePreferences.</string>
+    <string name="server_lab_local_address_hint">If empty, defaults to %1$s. IPv6 addresses are used only when IPv6 is enabled.</string>
+    <string name="server_lab_masque_warp_settings">WARP</string>
+    <string name="server_lab_masque_warp_private_key">WARP PrivateKey</string>
+    <string name="server_lab_masque_warp_public_key">WARP PublicKey</string>
+    <string name="server_obfs_type">Obfs type</string>
+    <string name="server_lab_min_packet_size">Min packet size (optional, default 512)</string>
+    <string name="server_lab_max_packet_size">Max packet size (optional, default 1200)</string>
+    <string name="server_lab_tcp_user_timeout" translatable="false">tcpUserTimeout</string>
+    <string name="server_hint_tcp_user_timeout">Milliseconds (e.g., 10000). Empty = system default.</string>
+    <string name="title_pref_dns_validate_region">Validate Region</string>
+    <string name="summary_pref_dns_validate_region">Check the region of local DNS results and fall back to remote DNS on mismatch.</string>
+    <string name="title_dns_parallel_query">DNS Parallel Query</string>
+    <string name="summary_dns_parallel_query">Query multiple DNS servers in parallel and use the fastest response.</string>
+    <string name="title_dns_serve_stale">DNS Serve Stale</string>
+    <string name="summary_dns_serve_stale">When enabled, reduces DNS lookup waits; expired results are still used while the latest result is fetched.</string>
+    <string name="title_donate">Donate</string>
+    <string name="acc_copy_address">Copy %1$s address</string>
+    <string name="aether_lab_exit_tcp_user_timeout" translatable="false">exit-node tcpUserTimeout</string>
+    <string name="action_exit">Exit</string>
+    <string name="action_back">Back</string>
+    <string name="action_more">More</string>
+    <string name="action_clear">Clear</string>
+    <string name="connection_connected_tv">Connected</string>
+
 </resources>

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.v2ray.ang.AppConfig
+import com.v2ray.ang.handler.AppNotificationManager
 import com.v2ray.ang.handler.MmkvManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -388,8 +389,6 @@ fun AppTheme(
 
         else -> hamedColorScheme(palette)
     }
-    val snackbarController = rememberAppSnackbarController()
-
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -405,16 +404,15 @@ fun AppTheme(
     val baseDensity = LocalDensity.current
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
-        LocalAppSnackbar provides snackbarController,
+        LocalAppNotification provides AppNotificationManager,
         LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * fontScale),
     ) {
         MaterialTheme(
             colorScheme = colorScheme
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                AppSnackbarBridge(controller = snackbarController)
+                AppNotificationBridge()
                 content()
-                AppSnackbarHost(hostState = snackbarController.hostState)
             }
         }
     }

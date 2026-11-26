@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -69,7 +71,7 @@ fun FormTextField(
                     backgroundColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
                 )
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().then(LocalEditorFocus.current?.target() ?: Modifier)
         )
     }
 }
@@ -93,6 +95,9 @@ fun FormDropdownField(
     val menuScrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val visibleOptions = remember(value, options, editable) {
+        if (editable) filterDropdownOptions(options, value) else options
+    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -101,7 +106,7 @@ fun FormDropdownField(
             if (!editable && newExpanded) {
                 keyboardController?.hide()
             }
-            expanded = newExpanded
+            expanded = newExpanded && dropdownHasEntries(visibleOptions, defaultOption)
         },
         modifier = modifier
             .fillMaxWidth()
@@ -109,7 +114,15 @@ fun FormDropdownField(
     ) {
         OutlinedTextField(
             value = value,
-            onValueChange = { if (editable) onValueChange(it) },
+            onValueChange = {
+                if (editable) {
+                    onValueChange(it)
+                    // Typing is the search: open the menu as soon as the text matches an option, so
+                    // a name that is already filled in can be replaced without tapping the field
+                    // again, and close it instead of showing an empty menu when nothing matches.
+                    expanded = filterDropdownOptions(options, it).isNotEmpty()
+                }
+            },
             readOnly = !editable,
             enabled = enabled,
             label = { Text(label) },
@@ -127,6 +140,7 @@ fun FormDropdownField(
                 )
             ),
             modifier = Modifier
+                .then(LocalEditorFocus.current?.target() ?: Modifier)
                 .menuAnchor(
                     type = if (editable) ExposedDropdownMenuAnchorType.PrimaryEditable
                     else ExposedDropdownMenuAnchorType.PrimaryNotEditable
@@ -157,7 +171,7 @@ fun FormDropdownField(
                 )
                 HorizontalDivider()
             }
-            options.forEach { option ->
+            visibleOptions.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option) },
                     onClick = {
@@ -170,3 +184,26 @@ fun FormDropdownField(
         }
     }
 }
+
+/**
+ * Options an editable dropdown offers for the text the user has typed.
+ *
+ * A blank query, or one that already equals an option, keeps every option so the menu still works
+ * as a plain picker. Any other query keeps the options containing it anywhere, ignoring case, so a
+ * partly remembered or mid-string fragment still finds its entry.
+ */
+internal fun filterDropdownOptions(options: List<String>, query: String): List<String> {
+    val trimmed = query.trim()
+    return if (trimmed.isEmpty() || trimmed in options) {
+        options
+    } else {
+        options.filter { it.contains(trimmed, ignoreCase = true) }
+    }
+}
+
+/**
+ * PattNG: whether a dropdown's menu has anything to list, its default entry or an option [visibleOptions] keeps. A tap
+ * opens no empty menu, as typing never does.
+ */
+internal fun dropdownHasEntries(visibleOptions: List<String>, defaultOption: String?): Boolean =
+    defaultOption != null || visibleOptions.isNotEmpty()

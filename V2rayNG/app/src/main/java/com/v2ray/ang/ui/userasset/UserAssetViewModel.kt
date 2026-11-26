@@ -24,7 +24,8 @@ internal data class AssetFileMetadata(val length: Long, val lastModified: Long)
 
 internal data class UserAssetUiState(
     val assets: List<AssetUrlCache> = emptyList(),
-    val fileMetadata: Map<String, AssetFileMetadata> = emptyMap()
+    val fileMetadata: Map<String, AssetFileMetadata> = emptyMap(),
+    val downloadingItem: String? = null
 )
 
 class UserAssetViewModel(application: Application) : BaseViewModel(application) {
@@ -94,24 +95,31 @@ class UserAssetViewModel(application: Application) : BaseViewModel(application) 
             )
         }
 
-    fun downloadGeoFiles(
+    suspend fun downloadGeoFiles(
         extDir: File,
         httpPort: Int,
         proxyUsername: String? = null,
-        proxyPassword: String? = null
+        proxyPassword: String? = null,
+        onProgress: (suspend (String) -> Unit)? = null
     ): GeoDownloadResult {
         val snapshot = uiState.value.assets
         var successCount = 0
         val failures = mutableListOf<String>()
 
-        snapshot.forEach { cache ->
-            val item = cache.assetUrl
-            val portsToTry = if (httpPort == 0) listOf(0) else listOf(httpPort, 0)
-            if (portsToTry.any { tryDownload(item, extDir, it, proxyUsername, proxyPassword) }) {
-                successCount++
-            } else {
-                failures.add(item.remarks)
+        try {
+            snapshot.forEach { cache ->
+                val item = cache.assetUrl
+                _uiState.value = _uiState.value.copy(downloadingItem = item.remarks)
+                onProgress?.invoke(item.remarks)
+                val portsToTry = if (httpPort == 0) listOf(0) else listOf(httpPort, 0)
+                if (portsToTry.any { tryDownload(item, extDir, it, proxyUsername, proxyPassword) }) {
+                    successCount++
+                } else {
+                    failures.add(item.remarks)
+                }
             }
+        } finally {
+            _uiState.value = _uiState.value.copy(downloadingItem = null)
         }
 
         return GeoDownloadResult(successCount, failures.size, failures)
@@ -139,13 +147,24 @@ class UserAssetViewModel(application: Application) : BaseViewModel(application) 
                     targetTemp
                 )
             ) {
-                targetTemp.renameTo(target)
+                if (!replaceAssetFile(targetTemp, target)) {
+                    LogUtil.e(AppConfig.TAG, "Failed to replace geo file: ${item.remarks}")
+                    return false
+                }
                 return true
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to download geo file: ${item.remarks}", e)
         }
         return false
+    }
+
+    internal fun replaceAssetFile(temp: File, target: File): Boolean {
+        if (!temp.renameTo(target)) {
+            temp.delete()
+            return false
+        }
+        return true
     }
 
     data class GeoDownloadResult(
