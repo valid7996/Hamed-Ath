@@ -919,4 +919,24 @@
     <string name="sub_info_open_page">باز کردن صفحه اطلاعات اشتراک</string>
     <string name="sub_info_unlimited">نامحدود</string>
 
+    <!-- Hamed Aether Built-in Subscriptions & Chaining -->
+    <string name="hamed_source_aether">اتر</string>
+    <string name="hamed_source_serverless">سرورلس</string>
+    <string name="hamed_source_mitm">MITM</string>
+    <string name="hamed_source_patterniha">پترن‌ها</string>
+    <string name="hamed_sub_server_title">کانفیگ اشتراک</string>
+    <string name="hamed_sub_syncing">در حال همگام‌سازی اشتراک‌ها…</string>
+    <string name="hamed_sub_sync_now">همگام‌سازی</string>
+    <string name="hamed_sub_no_configs">هنوز کانفیگی دریافت نشده؛ همگام‌سازی را بزنید.</string>
+    <string name="hamed_prep_syncing_sub">در حال همگام‌سازی اشتراک…</string>
+    <string name="hamed_sub_sync_failed">همگام‌سازی اشتراک ناموفق بود. اتصال اینترنت را بررسی کنید.</string>
+    <string name="hamed_chain_direct_short">مستقیم</string>
+    <string name="hamed_chain_psiphon_short">سایفون</string>
+    <string name="hamed_chain_tor_short">تور</string>
+    <string name="hamed_mitm_cert_title">گواهی ریشه MITM</string>
+    <string name="hamed_mitm_cert_ready_direct">برای حالت مستقیم MITM نصب گواهی در اندروید لازم است</string>
+    <string name="hamed_mitm_cert_ready_chained">در حالت زنجیره با سایفون یا تور نیازی به نصب دستی نیست</string>
+    <string name="hamed_mitm_cert_install">نصب گواهی</string>
+    <string name="hamed_mitm_cert_install_failed">باز کردن نصب‌کننده گواهی ناموفق بود</string>
+
 </resources>

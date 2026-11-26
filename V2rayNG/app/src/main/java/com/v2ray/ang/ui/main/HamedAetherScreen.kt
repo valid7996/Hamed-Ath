@@ -92,6 +92,8 @@ import com.v2ray.ang.enums.AetherPsiphon
 import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.handler.HamedAetherManager
+import com.v2ray.ang.handler.HamedDashboardSource
+import com.v2ray.ang.handler.HamedSubscriptionManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
@@ -121,11 +123,46 @@ fun HamedAetherScreen(
     val connectionInfo by HamedAetherManager.connectionInfo.collectAsStateWithLifecycle()
     val preparationStatus by HamedAetherManager.preparationStatus.collectAsStateWithLifecycle()
 
-    // Ensure Aether profile is present
+    val activeSource by HamedSubscriptionManager.activeSource.collectAsState()
+    val sourceServersMap by HamedSubscriptionManager.sourceServers.collectAsState()
+    val selectedGuidBySource by HamedSubscriptionManager.selectedGuidBySource.collectAsState()
+    val chainBySource by HamedSubscriptionManager.chainBySource.collectAsState()
+    val sharedPsiphonRegion by HamedSubscriptionManager.psiphonRegion.collectAsState()
+    val isSubSyncing by HamedSubscriptionManager.syncing.collectAsState()
+
+    var lastDashboardGuid by remember { mutableStateOf<String?>(null) }
+
+    // Initialize built-in subscriptions and select active source/server
     LaunchedEffect(Unit) {
-        val guid = HamedAetherManager.ensureAetherProfile()
-        if (uiState.selectedGuid != guid) {
-            onAction(MainAction.SelectServer(guid))
+        val source = HamedSubscriptionManager.initialize(context, syncEmptyInBackground = true)
+        val guid = if (source == HamedDashboardSource.AETHER) {
+            HamedAetherManager.ensureAetherProfile()
+        } else {
+            HamedSubscriptionManager.selectSource(source)
+        }
+        if (!guid.isNullOrBlank()) {
+            lastDashboardGuid = guid
+            if (uiState.selectedGuid != guid) {
+                onAction(MainAction.SelectServer(guid))
+            }
+        }
+    }
+
+    val subServersForSource = sourceServersMap[activeSource].orEmpty()
+    val activeSubGuid = selectedGuidBySource[activeSource]
+    LaunchedEffect(activeSource, activeSubGuid) {
+        if (activeSource != HamedDashboardSource.AETHER && !activeSubGuid.isNullOrBlank()) {
+            lastDashboardGuid = activeSubGuid
+            if (uiState.selectedGuid != activeSubGuid) {
+                onAction(MainAction.SelectServer(activeSubGuid))
+            }
+        }
+    }
+    LaunchedEffect(uiState.selectedGuid) {
+        val currentGuid = uiState.selectedGuid
+        if (!currentGuid.isNullOrBlank() && currentGuid != lastDashboardGuid) {
+            HamedSubscriptionManager.syncSelectionFromExternalGuid(currentGuid)
+            lastDashboardGuid = currentGuid
         }
     }
 
@@ -250,6 +287,17 @@ fun HamedAetherScreen(
         tileLayoutRaw = HamedTileLayout.default().encode()
     }
 
+    val effectiveChain = if (activeSource == HamedDashboardSource.AETHER) {
+        activeChain
+    } else {
+        chainBySource[activeSource] ?: HamedSubscriptionManager.getChain(activeSource)
+    }
+    val effectivePsiphonRegion = if (sharedPsiphonRegion.isNotBlank()) sharedPsiphonRegion else activePsiphonRegion
+    val activeSubServerName = subServersForSource
+        .firstOrNull { it.guid == activeSubGuid }
+        ?.remarks
+        .orEmpty()
+
     val tileContext = HamedTileContext(
         isRunning = isRunning,
         isConnecting = isConnecting,
@@ -260,8 +308,8 @@ fun HamedAetherScreen(
         premiumEnabled = premiumEnabled,
         onTogglePremium = { premiumEnabled = !premiumEnabled },
         activeProtocol = activeProtocol,
-        activeChain = activeChain,
-        activePsiphonRegion = activePsiphonRegion,
+        activeChain = effectiveChain,
+        activePsiphonRegion = effectivePsiphonRegion,
         activeObfs = activeObfs,
         activeIpVersion = activeIpVersion,
         onProtocol = { selected ->
@@ -270,15 +318,18 @@ fun HamedAetherScreen(
             if (isRunning) onAction(MainAction.RestartService)
         },
         onChain = { selected ->
-            activeChain = selected
-            val psiphon = if (selected == HamedChainType.PSIPHON) AetherPsiphon.CHAIN else AetherPsiphon.OFF
-            val tor = if (selected == HamedChainType.TOR) AetherTor.CHAIN else AetherTor.OFF
-            HamedAetherManager.updateChain(psiphon, tor)
+            if (activeSource == HamedDashboardSource.AETHER) {
+                activeChain = selected
+                val psiphon = if (selected == HamedChainType.PSIPHON) AetherPsiphon.CHAIN else AetherPsiphon.OFF
+                val tor = if (selected == HamedChainType.TOR) AetherTor.CHAIN else AetherTor.OFF
+                HamedAetherManager.updateChain(psiphon, tor)
+            }
+            HamedSubscriptionManager.setChain(activeSource, selected)
             if (isRunning) onAction(MainAction.RestartService)
         },
         onPsiphonRegion = { selectedRegion ->
             activePsiphonRegion = selectedRegion
-            HamedAetherManager.updatePsiphonRegion(selectedRegion)
+            HamedSubscriptionManager.setPsiphonRegion(selectedRegion)
             if (isRunning) onAction(MainAction.RestartService)
         },
         onObfs = { selected ->
@@ -300,6 +351,35 @@ fun HamedAetherScreen(
             }
         },
         onToggle = { onAction(MainAction.ToggleService) },
+        activeSource = activeSource,
+        subServers = subServersForSource,
+        activeSubServerGuid = activeSubGuid,
+        isSubSyncing = isSubSyncing,
+        onSelectSource = { selectedSource ->
+            val targetGuid = HamedSubscriptionManager.selectSource(selectedSource)
+            if (!targetGuid.isNullOrBlank()) {
+                lastDashboardGuid = targetGuid
+                onAction(MainAction.SelectServer(targetGuid))
+                if (isRunning) onAction(MainAction.RestartService)
+            } else if (isRunning) {
+                onAction(MainAction.ToggleService)
+            }
+        },
+        onSelectSubServer = { guid ->
+            lastDashboardGuid = guid
+            HamedSubscriptionManager.selectServer(activeSource, guid)
+            onAction(MainAction.SelectServer(guid))
+            if (isRunning) onAction(MainAction.RestartService)
+        },
+        onSyncSubscriptions = {
+            HamedSubscriptionManager.launchSync(force = true) { syncedGuid ->
+                onAction(MainAction.RefreshGroups)
+                if (!syncedGuid.isNullOrBlank()) {
+                    lastDashboardGuid = syncedGuid
+                    onAction(MainAction.SelectServer(syncedGuid))
+                }
+            }
+        },
     )
 
     Scaffold(
@@ -331,9 +411,11 @@ fun HamedAetherScreen(
                     ) {
                         HamedBreadcrumbBar(
                             activeProtocol = activeProtocol,
-                            activeChain = activeChain,
-                            activePsiphonRegion = activePsiphonRegion,
-                            activeObfs = activeObfs
+                            activeChain = effectiveChain,
+                            activePsiphonRegion = effectivePsiphonRegion,
+                            activeObfs = activeObfs,
+                            activeSource = activeSource,
+                            activeSubServerName = activeSubServerName,
                         )
                     }
                 }

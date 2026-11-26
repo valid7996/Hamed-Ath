@@ -86,8 +86,21 @@ object CoreConfigContextBuilder {
             }
 
             else -> {
-                val (chainProfiles, unresolved) = resolveProxyChainProfilesFromGroup(profile)
+                val (groupChainProfiles, unresolved) = resolveProxyChainProfilesFromGroup(profile)
                 unresolvedHop = unresolved
+                val chainProfiles = if (
+                    tag == AppConfig.TAG_PROXY &&
+                    unresolved == null &&
+                    groupChainProfiles.none { it.configType == EConfigType.AETHER }
+                ) {
+                    val carrierSelection = HamedSubscriptionChain.selectionForProfile(profile)
+                    val carrier = carrierSelection?.let {
+                        HamedSubscriptionChain.createCarrierProfile(it.chain, it.psiphonRegion)
+                    }
+                    if (carrier != null) listOf(carrier) + groupChainProfiles else groupChainProfiles
+                } else {
+                    groupChainProfiles
+                }
                 val type = if (chainProfiles.size <= 1) CoreResolvedType.NORMAL else CoreResolvedType.PROXYCHAIN
                 Pair(chainProfiles, type)
             }

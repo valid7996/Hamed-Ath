@@ -20,6 +20,7 @@ import com.v2ray.ang.enums.AetherScanMode
 import com.v2ray.ang.enums.AetherTor
 import com.v2ray.ang.enums.AetherTransport
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.ui.main.HamedChainType
 import com.v2ray.ang.ui.server.AetherKeysRepository
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CancellationException
@@ -290,6 +291,38 @@ object HamedAetherManager {
         prepareJob = scope.launch {
             try {
                 val locCtx = AppLocaleManager.localizedContext(context)
+                val activeSource = HamedSubscriptionManager.getActiveSource()
+                if (activeSource != HamedDashboardSource.AETHER) {
+                    if (activeSource == HamedDashboardSource.MITM) {
+                        HamedMitmCertGenerator.ensureCertFiles(context)
+                    }
+                    HamedSubscriptionManager.ensureBuiltInSubscriptions()
+                    HamedSubscriptionManager.refreshServerLists()
+                    var targetGuid = HamedSubscriptionManager.selectedGuidBySource.value[activeSource]
+                    if (targetGuid.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            onStatusChange(locCtx.getString(R.string.hamed_prep_syncing_sub))
+                        }
+                        targetGuid = HamedSubscriptionManager.syncBlocking(
+                            sources = listOf(activeSource),
+                            force = false,
+                        )
+                    }
+                    if (targetGuid.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            _preparationStatus.value = null
+                            onError(locCtx.getString(R.string.hamed_sub_sync_failed))
+                        }
+                        return@launch
+                    }
+                    MmkvManager.setSelectServer(targetGuid)
+                    withContext(Dispatchers.Main) {
+                        onStatusChange(locCtx.getString(R.string.hamed_prep_connecting))
+                        onSuccess(targetGuid)
+                    }
+                    return@launch
+                }
+
                 val (guid, profile) = getActiveAetherProfile()
                 applySettingsToProfile(profile)
 
@@ -546,9 +579,19 @@ object HamedAetherManager {
      */
     fun updateFromTestResult(result: ConnectionTestResult) {
         val isSuccessful = result.delayMillis >= 0
-        val (_, profile) = getActiveAetherProfile()
-        val isChained = AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
-                        AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
+        val activeSource = HamedSubscriptionManager.getActiveSource()
+        val isChained = if (activeSource == HamedDashboardSource.AETHER) {
+            val (_, profile) = getActiveAetherProfile()
+            AetherPsiphon.fromString(profile.aetherPsiphon) != AetherPsiphon.OFF ||
+                AetherTor.fromString(profile.aetherTor) != AetherTor.OFF
+        } else {
+            HamedSubscriptionManager.getChain(activeSource) != HamedChainType.DEFAULT
+        }
+        val carrierName = if (activeSource == HamedDashboardSource.AETHER) {
+            "Cloudflare WARP"
+        } else {
+            activeSource.subRemark
+        }
         val flag = if (isSuccessful) countryCodeToEmojiFlag(result.country) else "🌐"
         val country = if (isSuccessful) (result.country ?: "---") else "---"
         val ip = if (isSuccessful) (result.ipAddress ?: "---") else "---"
@@ -558,7 +601,7 @@ object HamedAetherManager {
             country = country,
             flagEmoji = flag,
             carrierFlagEmoji = "🇺🇸",
-            carrierName = "Cloudflare WARP",
+            carrierName = carrierName,
             isChained = isChained,
             pingMs = result.delayMillis,
             isTesting = false,

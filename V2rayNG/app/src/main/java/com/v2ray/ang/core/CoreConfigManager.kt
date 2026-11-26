@@ -15,6 +15,7 @@ import com.v2ray.ang.enums.BalancerStrategyType
 import com.v2ray.ang.enums.CoreResolvedType
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.handler.HamedMitmCertGenerator
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.util.HttpUtil
@@ -145,6 +146,9 @@ object CoreConfigManager {
 
         val json = JsonUtil.parseString(raw)?.takeIf { it.isJsonObject }?.asJsonObject ?: return result
 
+        HamedMitmCertGenerator.ensureCertFiles(context)
+        HamedSubscriptionChain.resolveCustomCertPaths(json, Utils.userAssetPath(context))
+
         val dependency = AetherDependency.ofCustom(json)
         aetherFailure(context, configContext.guid, dependency)?.let { return it }
         if (dependency is AetherDependency.Single) {
@@ -185,6 +189,25 @@ object CoreConfigManager {
                     AetherDependency.Routing.PortTaken -> return secondaryPortFailure(context, configContext.guid, secondaryPort)
                     is AetherDependency.Routing.ExitNodeSelected ->
                         return exitNodeSelectorFailure(context, configContext.guid, routing.selector)
+                }
+            } else if (routeAether && core == null) {
+                val mainProfile = runCatching { MmkvManager.decodeServerConfig(configContext.guid) }.getOrNull()
+                val selection = HamedSubscriptionChain.selectionForProfile(mainProfile)
+                if (selection != null && selection.chain != com.v2ray.ang.ui.main.HamedChainType.DEFAULT) {
+                    val secondaryPort = AetherCoreManager.secondarySocksPort
+                    when (
+                        val injected = HamedSubscriptionChain.injectCustomChain(
+                            json = json,
+                            chain = selection.chain,
+                            psiphonRegion = selection.psiphonRegion,
+                            secondaryPort = secondaryPort,
+                        )
+                    ) {
+                        is HamedSubscriptionChain.CustomInjectResult.Injected -> result.aetherCore = injected.core
+                        HamedSubscriptionChain.CustomInjectResult.PortTaken ->
+                            return secondaryPortFailure(context, configContext.guid, secondaryPort)
+                        HamedSubscriptionChain.CustomInjectResult.Skipped -> Unit
+                    }
                 }
             }
             return JsonUtil.toJsonPretty(json)?.let { result.copy(content = it) } ?: result

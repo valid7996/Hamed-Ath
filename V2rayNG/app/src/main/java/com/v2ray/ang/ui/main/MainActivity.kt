@@ -195,8 +195,11 @@ class MainActivity : HelperBaseComponentActivity() {
             onStatusChange = { msg ->
                 com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(msg)
             },
-            onSuccess = { _ ->
+            onSuccess = { preparedGuid ->
                 com.v2ray.ang.handler.HamedAetherManager.setPreparationStatus(null)
+                if (mainViewModel.uiState.value.selectedGuid != preparedGuid) {
+                    mainViewModel.onAction(MainAction.SelectServer(preparedGuid))
+                }
                 requestServiceStart()
             },
             onError = { err ->

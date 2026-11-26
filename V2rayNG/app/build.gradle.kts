@@ -13,8 +13,12 @@ android {
         applicationId = "com.hamed.aether"
         minSdk = 29
         targetSdk = 37
-        versionCode = 755
-        versionName = (project.findProperty("pattngVersion") as? String)?.takeIf { it.isNotBlank() } ?: "2.3.15"
+        versionCode = 760
+        versionName = (project.findProperty("pattngVersion") as? String)
+            ?.trim()
+            ?.removePrefix("v")
+            ?.removePrefix("V")
+            ?.takeIf { it.isNotBlank() } ?: "1.0.5"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {

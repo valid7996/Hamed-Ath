@@ -16,6 +16,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -66,6 +67,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,8 +75,12 @@ import com.v2ray.ang.R
 import com.v2ray.ang.enums.AetherIpVersion
 import com.v2ray.ang.enums.AetherObfuscation
 import com.v2ray.ang.enums.AetherProtocol
+import com.v2ray.ang.extension.toast
 import com.v2ray.ang.handler.HamedAetherManager
 import com.v2ray.ang.handler.HamedConnectionInfo
+import com.v2ray.ang.handler.HamedDashboardSource
+import com.v2ray.ang.handler.HamedMitmCertGenerator
+import com.v2ray.ang.handler.HamedSubServerSummary
 import com.v2ray.ang.handler.HamedTrafficState
 import com.v2ray.ang.ui.compose.HamedFontScale
 import com.v2ray.ang.ui.compose.HamedPaletteId
@@ -111,6 +117,13 @@ data class HamedTileContext(
     val onIpVersion: (AetherIpVersion) -> Unit,
     val onRefreshIp: () -> Unit,
     val onToggle: () -> Unit,
+    val activeSource: HamedDashboardSource = HamedDashboardSource.AETHER,
+    val subServers: List<HamedSubServerSummary> = emptyList(),
+    val activeSubServerGuid: String? = null,
+    val isSubSyncing: Boolean = false,
+    val onSelectSource: (HamedDashboardSource) -> Unit = {},
+    val onSelectSubServer: (String) -> Unit = {},
+    val onSyncSubscriptions: () -> Unit = {},
 )
 
 enum class HamedChainType(val displayName: String) {
@@ -194,11 +207,19 @@ fun HamedHeroConnect(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        HamedPremiumChip(
-            enabled = premiumEnabled,
-            onToggle = onTogglePremium,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+            HamedPremiumChip(
+                enabled = premiumEnabled,
+                onToggle = onTogglePremium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            HamedQuickChainChipRow(
+                activeChain = tileContext.activeChain,
+                onSelect = tileContext.onChain,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         val rotation = remember { Animatable(0f) }
         LaunchedEffect(shakeTick) {
@@ -224,7 +245,7 @@ fun HamedHeroConnect(
                 listOf(Color(0xFFB8F438), Color(0xFF9EE824))
             )
             isConnecting -> HamedThemeColors.ConnectingGradient
-            premiumEnabled -> HamedThemeColors.PremiumGradient
+            premiumEnabled && tileContext.activeSource == HamedDashboardSource.AETHER -> HamedThemeColors.PremiumGradient
             else -> Brush.horizontalGradient(
                 listOf(Color(0xFF1B2030), Color(0xFF151926))
             )
@@ -349,6 +370,70 @@ fun HamedHeroConnect(
                             text = subText,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             color = secondaryTextColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HamedQuickChainChipRow(
+    activeChain: HamedChainType,
+    onSelect: (HamedChainType) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.height(44.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = HamedThemeColors.InnerCard,
+        border = BorderStroke(1.dp, HamedThemeColors.Border),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val items = listOf(
+                Triple(HamedChainType.DEFAULT, R.string.hamed_chain_direct_short, R.drawable.ic_flash_on_24dp),
+                Triple(HamedChainType.PSIPHON, R.string.hamed_chain_psiphon_short, R.drawable.ic_routing_24dp),
+                Triple(HamedChainType.TOR, R.string.hamed_chain_tor_short, R.drawable.ic_shield_24dp),
+            )
+            items.forEach { (chain, labelRes, iconRes) ->
+                val selected = activeChain == chain
+                Surface(
+                    onClick = { onSelect(chain) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (selected) HamedThemeColors.PrimaryBlue.copy(alpha = 0.25f) else Color.Transparent,
+                    border = if (selected) BorderStroke(1.dp, HamedThemeColors.AccentCyan.copy(alpha = 0.65f)) else null,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(iconRes),
+                            contentDescription = null,
+                            tint = if (selected) HamedThemeColors.AccentCyan else HamedThemeColors.TextSecondary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 12.sp,
+                            ),
+                            color = if (selected) Color.White else HamedThemeColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -1356,7 +1441,9 @@ fun HamedBreadcrumbBar(
     activeChain: HamedChainType,
     activePsiphonRegion: String,
     activeObfs: AetherObfuscation,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activeSource: HamedDashboardSource = HamedDashboardSource.AETHER,
+    activeSubServerName: String = "",
 ) {
     Row(
         modifier = modifier
@@ -1365,23 +1452,31 @@ fun HamedBreadcrumbBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        val protoLabel = when (activeProtocol) {
-            AetherProtocol.WIREGUARD -> "WIREGUARD"
-            AetherProtocol.MASQUE -> "MASQUE"
-            AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
-            AetherProtocol.MIM -> "MIM"
-            AetherProtocol.GOOL -> "WARP"
+        val firstLabel = if (activeSource == HamedDashboardSource.AETHER) {
+            when (activeProtocol) {
+                AetherProtocol.WIREGUARD -> "WIREGUARD"
+                AetherProtocol.MASQUE -> "MASQUE"
+                AetherProtocol.WG_OVER_MASQUE -> "WG+MASQUE"
+                AetherProtocol.MIM -> "MIM"
+                AetherProtocol.GOOL -> "WARP"
+            }
+        } else {
+            activeSource.subRemark
         }
         val chainLabel = if (activeChain == HamedChainType.PSIPHON && activePsiphonRegion.isNotBlank()) {
             "Psiphon (${activePsiphonRegion.uppercase()})"
         } else {
             activeChain.displayName
         }
-        val obfsLabel = activeObfs.name.uppercase()
+        val lastLabel = if (activeSource == HamedDashboardSource.AETHER) {
+            activeObfs.name.uppercase()
+        } else {
+            activeSubServerName.ifBlank { activeSource.storageId.uppercase() }
+        }
 
         BreadcrumbChip(
             iconRes = R.drawable.ic_shield_24dp,
-            label = protoLabel
+            label = firstLabel
         )
         Text(
             text = ">",
@@ -1401,7 +1496,7 @@ fun HamedBreadcrumbBar(
         )
         BreadcrumbChip(
             iconRes = R.drawable.ic_flash_on_24dp,
-            label = obfsLabel
+            label = lastLabel
         )
     }
 }
@@ -1426,11 +1521,13 @@ private fun BreadcrumbChip(iconRes: Int, label: String) {
             )
             Text(
                 text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 11.sp
                 ),
-                color = HamedThemeColors.TextPrimary
+                color = HamedThemeColors.TextPrimary,
             )
         }
     }
@@ -1465,6 +1562,27 @@ fun HamedServerCard(
 
     val obfsSubtext = tileContext.activeObfs.name.lowercase().replaceFirstChar { it.uppercase() }
 
+    val activeSubServer = tileContext.subServers.firstOrNull { it.guid == tileContext.activeSubServerGuid }
+        ?: tileContext.subServers.firstOrNull()
+    val headerTitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+        protoName
+    } else {
+        activeSubServer?.remarks
+            ?: if (tileContext.isSubSyncing) stringResource(R.string.hamed_sub_syncing)
+            else tileContext.activeSource.subRemark
+    }
+    val headerSubtitle = if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+        "$chainSubtext • $obfsSubtext"
+    } else {
+        "$chainSubtext • ${tileContext.activeSource.subRemark}"
+    }
+    val modeBadgeLabel = when (tileContext.activeSource) {
+        HamedDashboardSource.AETHER -> stringResource(R.string.hamed_source_aether)
+        HamedDashboardSource.SERVERLESS -> stringResource(R.string.hamed_source_serverless)
+        HamedDashboardSource.MITM -> stringResource(R.string.hamed_source_mitm)
+        HamedDashboardSource.PATTERNIHA -> stringResource(R.string.hamed_source_patterniha)
+    }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -1485,6 +1603,15 @@ fun HamedServerCard(
                 )
                 .padding(16.dp)
         ) {
+            // Built-in mode & synced subscription switcher
+            HamedSourceSwitcherBar(
+                activeSource = tileContext.activeSource,
+                onSelect = tileContext.onSelectSource,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             // Header row: Chevron (left), Info (center), Flag & "سرور فعلی" (right)
             Row(
                 modifier = Modifier
@@ -1532,15 +1659,19 @@ fun HamedServerCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = protoName,
+                        text = headerTitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp
+                            fontSize = 16.sp
                         ),
                         color = Color.White
                     )
                     Text(
-                        text = "$chainSubtext • $obfsSubtext",
+                        text = headerSubtitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         color = Color(0xFFA595C7)
                     )
@@ -1589,13 +1720,13 @@ fun HamedServerCard(
                     )
                 }
 
-                // Aether / Core Badge
+                // Active Mode / Core Badge
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = Color(0xFFB5F43C)
                 ) {
                     Text(
-                        text = "Aether",
+                        text = modeBadgeLabel,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
@@ -1682,13 +1813,272 @@ fun HamedServerCard(
                             .background(Color(0x33FFFFFF))
                     )
 
-                    HamedProtocolTile(tileContext = tileContext)
-                    HamedChainTile(tileContext = tileContext)
-                    HamedObfsTile(tileContext = tileContext)
-                    HamedIpVersionTile(tileContext = tileContext)
-                    HamedWarpKeysTile(tileContext = tileContext)
+                    if (tileContext.activeSource == HamedDashboardSource.AETHER) {
+                        HamedProtocolTile(tileContext = tileContext)
+                        HamedChainTile(tileContext = tileContext)
+                        HamedObfsTile(tileContext = tileContext)
+                        HamedIpVersionTile(tileContext = tileContext)
+                        HamedWarpKeysTile(tileContext = tileContext)
+                    } else {
+                        HamedSubServerSelectorTile(
+                            tileContext = tileContext,
+                            activeServer = activeSubServer,
+                        )
+                        HamedChainTile(tileContext = tileContext)
+                        if (tileContext.activeSource == HamedDashboardSource.MITM) {
+                            HamedMitmCertTile(activeChain = tileContext.activeChain)
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HamedSourceSwitcherBar(
+    activeSource: HamedDashboardSource,
+    onSelect: (HamedDashboardSource) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val sources = listOf(
+        HamedDashboardSource.AETHER to R.string.hamed_source_aether,
+        HamedDashboardSource.SERVERLESS to R.string.hamed_source_serverless,
+        HamedDashboardSource.MITM to R.string.hamed_source_mitm,
+        HamedDashboardSource.PATTERNIHA to R.string.hamed_source_patterniha,
+    )
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = Color(0x40000000),
+        border = BorderStroke(0.8.dp, Color(0x28FFFFFF)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            sources.forEach { (source, labelRes) ->
+                val selected = activeSource == source
+                Surface(
+                    onClick = { onSelect(source) },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) Color(0xFFB5F43C) else Color.Transparent,
+                ) {
+                    Text(
+                        text = stringResource(labelRes),
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 11.sp,
+                        ),
+                        color = if (selected) Color(0xFF141F04) else Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HamedSubServerSelectorTile(
+    tileContext: HamedTileContext,
+    activeServer: HamedSubServerSummary?,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val servers = tileContext.subServers
+    val titleText = activeServer?.remarks
+        ?: if (tileContext.isSubSyncing) stringResource(R.string.hamed_sub_syncing)
+        else stringResource(R.string.hamed_sub_no_configs)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(HamedThemeColors.InnerCard)
+                    .border(1.dp, HamedThemeColors.Border, RoundedCornerShape(14.dp))
+                    .clickable(enabled = servers.isNotEmpty()) { expanded = true }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Surface(
+                        modifier = Modifier.size(36.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = HamedThemeColors.InnerCard,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_shield_24dp),
+                                contentDescription = null,
+                                tint = HamedThemeColors.AccentCyan,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.hamed_sub_server_title),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = HamedThemeColors.TextSecondary,
+                        )
+                        Text(
+                            text = titleText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = HamedThemeColors.TextPrimary,
+                        )
+                    }
+                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_expand_more_24dp),
+                    contentDescription = null,
+                    tint = HamedThemeColors.TextSecondary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(280.dp)
+                    .background(HamedThemeColors.CardBackground),
+            ) {
+                servers.forEach { item ->
+                    val isSelected = item.guid == activeServer?.guid
+                    val pingSuffix = if (item.pingMillis > 0) " (${item.pingMillis} ms)" else ""
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(
+                                    text = item.remarks + pingSuffix,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) HamedThemeColors.AccentCyan else HamedThemeColors.TextPrimary,
+                                )
+                                Text(
+                                    text = item.subtitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = HamedThemeColors.TextSecondary,
+                                )
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            tileContext.onSelectSubServer(item.guid)
+                        },
+                    )
+                }
+            }
+        }
+
+        Surface(
+            onClick = { if (!tileContext.isSubSyncing) tileContext.onSyncSubscriptions() },
+            shape = RoundedCornerShape(14.dp),
+            color = HamedThemeColors.InnerCard,
+            border = BorderStroke(1.dp, HamedThemeColors.Border),
+            modifier = Modifier.size(56.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (tileContext.isSubSyncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = HamedThemeColors.AccentCyan,
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_refresh_24dp),
+                            contentDescription = stringResource(R.string.hamed_sub_sync_now),
+                            tint = HamedThemeColors.AccentCyan,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.hamed_sub_sync_now),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            color = HamedThemeColors.TextSecondary,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HamedMitmCertTile(
+    activeChain: HamedChainType,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(HamedThemeColors.InnerCard)
+            .border(1.dp, HamedThemeColors.Border, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(
+                text = stringResource(R.string.hamed_mitm_cert_title),
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                color = HamedThemeColors.TextPrimary,
+            )
+            Text(
+                text = stringResource(
+                    if (activeChain == HamedChainType.DEFAULT) R.string.hamed_mitm_cert_ready_direct
+                    else R.string.hamed_mitm_cert_ready_chained
+                ),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                color = HamedThemeColors.TextSecondary,
+            )
+        }
+        Surface(
+            onClick = {
+                val intent = HamedMitmCertGenerator.buildInstallCertIntent(context)
+                if (intent != null) {
+                    runCatching { context.startActivity(intent) }.onFailure {
+                        context.toast(R.string.hamed_mitm_cert_install_failed)
+                    }
+                } else {
+                    context.toast(R.string.hamed_mitm_cert_install_failed)
+                }
+            },
+            shape = RoundedCornerShape(10.dp),
+            color = HamedThemeColors.PrimaryBlue.copy(alpha = 0.22f),
+            border = BorderStroke(1.dp, HamedThemeColors.AccentCyan.copy(alpha = 0.6f)),
+        ) {
+            Text(
+                text = stringResource(R.string.hamed_mitm_cert_install),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = HamedThemeColors.AccentCyan,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            )
         }
     }
 }

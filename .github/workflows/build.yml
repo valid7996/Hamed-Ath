@@ -216,8 +216,12 @@ jobs:
         cd ${{ github.workspace }}/V2rayNG
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
+        ./gradlew testFdroidDebugUnitTest \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
+          --no-daemon \
+          --stacktrace
         ./gradlew assembleRelease \
-          -PpattngVersion="${{ inputs.release_tag }}" \
+          -PpattngVersion="${{ inputs.release_tag || '1.0.5' }}" \
           -Pandroid.injected.signing.store.file="${{ steps.android_keystore.outputs.filePath }}" \
           -Pandroid.injected.signing.store.password="${{ steps.android_keystore.outputs.storePassword }}" \
           -Pandroid.injected.signing.key.alias="${{ steps.android_keystore.outputs.keyAlias }}" \
@@ -254,17 +258,18 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: ${{ success() }}
       with:
-        tag_name: v1.0.4
-        name: Hamed Aether v1.0.4 (Official Signed Release)
+        tag_name: v1.0.5
+        name: Hamed Aether v1.0.5 (Official Signed Release)
         body: |
-          Official Production Release of **Hamed Aether v1.0.4** (Non-Debug, Keystore Signed)
-          - Streamlined ZedSecure Layout Refinements:
-            1. Top Server Card: Speed test / ping refresh button integrated directly next to latency ping badge.
-            2. Top Bar: Clean centered app title (logo and subtitle text removed).
-            3. Bottom Dashboard: Dedicated Upload & Download oscilloscope waveforms + Session Traffic & Duration (redundant IP card removed).
-            4. Turbo Scan Mode: Renamed Ultra Premium to Turbo Scan ("اسکن توربو") which activates high-speed aggressive clean IP discovery.
-            5. Localized Connection Status: Full Persian status messages ("در حال اسکن آی‌پی تمیز", "در حال دریافت و ثبت کلیدها", "در حال برقراری اتصال").
-            6. Redesigned Cyber Shield App Icon: Brand-new professional shield logo with stylized letter 'H' across all densities and adaptive safe zones.
+          Official Production Release of **Hamed Aether v1.0.5** (Non-Debug, Keystore Signed)
+          - Built-in Synced Subscriptions on Connection Dashboard:
+            1. **Serverless** (`Patterniha-S`) — built-in fragment/anti-censorship profiles synced directly to the dashboard.
+            2. **MITM-DomainFronting** (`Patterniha-M`) — built-in domain fronting profiles with automatic on-device Root CA generation & one-tap Android CA install.
+            3. **Patterniha Free Configs** — synced community nodes selectable right from the dashboard.
+          - Universal Psiphon & Tor Chaining:
+            * Chain **Psiphon** (with exit country selection) or **Tor** on top of Serverless, MITM-DomainFronting, Patterniha nodes, and Aether protocols.
+          - Version Sync Fix:
+            * Unified Gradle `versionName`, `versionCode`, About screen, Update Checker, and APK release filenames (`v1.0.5`).
         files: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
         fail_on_unmatched_files: true
         prerelease: false
